@@ -4,6 +4,9 @@
 
 #include "Servo.h"
 
+/* 
+ *  Switch class based derived from the Servo library class
+ */
 class Switch: public Servo {
 public:
   Switch(int spin, int dccpin, int button, int straight, int curve): 
@@ -18,15 +21,14 @@ public:
      m_state(true) {
       pinMode(m_dccpin,OUTPUT);
       pinMode(m_button,INPUT);
-      pinMode(10,OUTPUT);
      }
 
   void Init() {
       writeMicroseconds(m_straight);
       attach(m_spin);
       digitalWrite(m_dccpin,LOW);
-      digitalWrite(10,HIGH);
      }
+  
   bool Change(bool straight) {
     short int j;
     if(straight) {
@@ -67,6 +69,8 @@ Switch mySwitch(9,4,8,1600-283, 1600+283);
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(10,OUTPUT);
+  digitalWrite(10,HIGH);
   mySwitch.Init();
   delay(1000);
 }
