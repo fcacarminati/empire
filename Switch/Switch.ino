@@ -27,7 +27,13 @@ public:
       writeMicroseconds(m_straight);
       attach(m_spin);
       digitalWrite(m_dccpin,LOW);
+      pinMode(m_button,INPUT_PULLUP);
      }
+
+  int readButton() const {
+    /* Read the button */
+    return digitalRead(m_button);
+  }
   
   bool Change(bool straight) {
     short int j;
@@ -54,7 +60,7 @@ public:
   }
 private:
   unsigned char m_spin;   // pin of the servo
-  unsigned char m_dccpin; // pin to control dcc
+  unsigned char m_dccpin; // pin to control dcc relay
   unsigned char m_button; // pin for manual button
   short int m_straight;   // straight milliseconds
   short int m_curve;      // curve milliseconds
@@ -63,43 +69,33 @@ private:
   bool m_state;           // state 
 };
 
-Switch mySwitch(9,4,8,1600-283, 1600+283);
+Switch mySwitch(9,4,8,1460-300, 1460+300);
 
-// the setup function runs once when you press reset or power the board
+// The setup function runs once when you press reset or power the board
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(10,OUTPUT);
   digitalWrite(10,HIGH);
   mySwitch.Init();
   delay(1000);
 }
 
-// the loop function runs over and over again forever
+// The loop function runs over and over again forever
 void loop() {
  
-  static int highlow=1;
-  mySwitch.Change(true);
-  digitalWrite(LED_BUILTIN, highlow);    // turn the LED off by making the voltage LOW
-  delay(1000);
-
- // read the state of the pushbutton value:
+  static int straight = true;
+  static int ledhighlow = 1;
+  
   int buttonState;
-  buttonState = digitalRead(8);
+  buttonState = mySwitch.readButton();
 
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-  if (buttonState == HIGH) {
+  if (buttonState == LOW) {
     // turn LED on:
-    digitalWrite(10, HIGH);
-  } else {
-    // turn LED off:
-    digitalWrite(10, LOW);
+    straight = !straight;
+    mySwitch.Change(straight);
+    ledhighlow = 1-ledhighlow;
+    digitalWrite(10, ledhighlow);
+    delay(500);
   }
-
-  
-  highlow = 1-highlow;
-  mySwitch.Change(false);
-  digitalWrite(LED_BUILTIN, highlow);    // turn the LED off by making the voltage LOW
-  delay(1000);                       // waits 15ms for the servo to reach the position
-  highlow = 1-highlow;
 }
