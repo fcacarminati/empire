@@ -82,18 +82,17 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  digitalWrite(sensR_b1,HIGH);
-  befR_b1  = analogRead(A0);
-  befR_b1 += analogRead(A0);
-  befR_b1 += analogRead(A0);
-  befR_b1 /= 3.;  
+  const short nrep = 5;
+  befR_b1 = 0;
+  for(short i=0; i<nrep; ++i) 
+    befR_b1 += analogRead(A0);
+  befR_b1 /= nrep; 
   delay(50);
-  digitalWrite(sensR_b1,LOW);
-  aftR_b1  = analogRead(A0);
-  aftR_b1 += analogRead(A0);
-  aftR_b1 += analogRead(A0);
-  aftR_b1 /= 3.;
-  if(aftR_b1-befR_b1 > 100) Serial.println(aftR_b1-befR_b1);
+  aftR_b1 = 0;
+  for(short i=0; i<nrep; ++i) 
+    aftR_b1 += analogRead(A0);
+  aftR_b1 /= nrep; 
+  Serial.println(befR_b1-aftR_b1);
   if(aftR_b1-befR_b1 < 100)
     digitalWrite(13,HIGH);
    else 
