@@ -58,10 +58,7 @@ short fade_b2 = 0;
 
 const int fadeAmount = 5;    // how many points to fade the LED by
 
-enum state {kOff, kSet, kClear, kOn};
-
-bool ss1 = false;
-bool ss2 = false;
+enum state {kOn, kSet, kClear, kOff};
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -73,12 +70,20 @@ void setup() {
   pinMode(sensR_b1, INPUT);
   pinMode(sensL_b1, INPUT);
 
+  digitalWrite(redR_b1, HIGH);
+  digitalWrite(lights_b1, HIGH);
+  digitalWrite(redL_b1, HIGH);
+
   // Bridge 2
   pinMode(redR_b2, OUTPUT);
   pinMode(lights_b2, OUTPUT);
   pinMode(redL_b2, OUTPUT);
   pinMode(sensR_b2, INPUT);
   pinMode(sensL_b2, INPUT);
+
+  digitalWrite(redR_b2, HIGH);
+  digitalWrite(lights_b2, HIGH);
+  digitalWrite(redL_b2, HIGH);
 
   Serial.begin(57600); 
 }
@@ -88,11 +93,16 @@ void loop() {
   curR_b1 = digitalRead(sensR_b1);
   stateR_b1 = curR_b1 + 2*preR_b1;
   preR_b1 = curR_b1;
+  Serial.print("state R b1 = ");
+  Serial.println(stateR_b1);
   
   curL_b1 = digitalRead(sensL_b1);
   stateL_b1 = curL_b1 + 2*preL_b1;
   preL_b1 = curL_b1;
+  Serial.print("state L b1 = ");
+  Serial.println(stateL_b1);
 
+if(!fade_b1) {
 // Is the train entering?
   if((stateR_b1 == kSet && stateL_b1 != kOn) ||
      (stateR_b1 != kOn  && stateL_b1 == kSet))
@@ -105,11 +115,11 @@ void loop() {
     fade_b1 = -1;
 
 // The train is either in or out
-    else
-      fade_b1 = 0;
-
-  if(fade_b1) {
-  
+//    else
+//      fade_b1 = 0;
+}
+  if(fade_b1 != 0) {
+      
     if(millis()-fademils_b1 > 50) {
       fademils_b1 = millis();
 
@@ -120,25 +130,25 @@ void loop() {
       analogWrite(lights_b1, brightness_b1);
       
       // stop fading if we have reached max or min
-      if (brightness_b1 <= 0) {
-	brightness_b1 = 0;
-	fade_b1 = 0;
+      if(brightness_b1 <= 0) {
+	      brightness_b1 = 0;
+	      fade_b1 = 0;
       } else if(brightness_b1 >= 255) {
-	brightness_b1 = 255;
-	fade_b1 = 0;
+	      brightness_b1 = 255;
+//	      fade_b1 = 0;
       }
+   }
+   if(brightness_b1 > 0) {
+     if(millis() - blinkred_b1 > 500) {
+       blinkred_b1 = millis();
+       highlow_b1 = 1-highlow_b1;
+       digitalWrite(redR_b1,highlow_b1);
+       digitalWrite(redL_b1,1-highlow_b1);
     }
-  }
-  if(brightness_b1 > 0) {
-    if(millis() - blinkred_b1 > 500) {
-      blinkred_b1 = millis();
-      highlow_b1 = 1-highlow_b1;
-      digitalWrite(redR_b1,highlow_b1);
-      digitalWrite(redL_b1,1-highlow_b1);
-    }
-  } else {
-    digitalWrite(redR_b1,LOW);
-    digitalWrite(redL_b1,LOW);
+  } 
+  }else {
+    digitalWrite(redR_b1,HIGH);
+    analogWrite(lights_b1, 255);
+    digitalWrite(redL_b1,HIGH);
   }
 }
-
