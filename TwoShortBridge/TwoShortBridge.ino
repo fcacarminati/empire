@@ -14,8 +14,8 @@
 // D7  driver right red lights
 // D9  driver bridge lights
 // D8  driver left red lights
-// D9  digital input for sensor 2R
-// D10 digital input dor sensor 2L
+// D10  digital input for sensor 2R
+// D11 digital input dor sensor 2L
 //
  
 // Bridge 1
@@ -41,8 +41,8 @@ short fade_b1 = 0;    // fading direction
 int redR_b2 = 7;
 int lights_b2 = 9;
 int redL_b2 = 8;
-int sensR_b2 = 9;
-int sensL_b2 = 10;
+int sensR_b2 = 10;
+int sensL_b2 = 11;
 int brightness_b2 = 0;
 unsigned long fademils_b2 = millis();
 unsigned long blinkred_b2 = millis();
@@ -135,10 +135,10 @@ void loop() {
       highlow_b1 = 1-highlow_b1;
       digitalWrite(redR_b1,highlow_b1);
       digitalWrite(redL_b1,1-highlow_b1);
-    } else {
-      digitalWrite(redR_b1,LOW);
-      digitalWrite(redL_b1,LOW);
     }
+  } else {
+    digitalWrite(redR_b1,LOW);
+    digitalWrite(redL_b1,LOW);
   }
 }
 
