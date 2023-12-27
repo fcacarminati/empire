@@ -109,10 +109,6 @@ void loop() {
        (stateR_b1 == kOff   && stateL_b1 == kClear))
       fade_b1 = -1;
     
-// The train is either in or out
-//    else
-//      fade_b1 = 0;
-  
   if(fade_b1 != 0) {
     
     if(millis()-fademils_b1 > 50) {
