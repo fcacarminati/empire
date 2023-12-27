@@ -36,6 +36,7 @@ short stateR_b1 = 0;  // logical state of right side
                       // 0 off; 1 set; 2 cleared; 3 on
 short stateL_b1 = 0;  // logical state of left side
 short fade_b1 = 0;    // fading direction
+bool trainIn_b1 = false;
 
 // Bridge 2
 int redR_b2 = 7;
@@ -90,7 +91,6 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  bool trainIn_b1 = false;
   curR_b1 = digitalRead(sensR_b1);
   stateR_b1 = curR_b1 + 2*preR_b1;
   preR_b1 = curR_b1;
