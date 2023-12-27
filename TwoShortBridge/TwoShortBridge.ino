@@ -90,6 +90,7 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
+  bool trainIn_b1 = false;
   curR_b1 = digitalRead(sensR_b1);
   stateR_b1 = curR_b1 + 2*preR_b1;
   preR_b1 = curR_b1;
@@ -99,15 +100,19 @@ void loop() {
   preL_b1 = curL_b1;
   
 // Is the train entering?
-  if((stateR_b1 == kSet && stateL_b1 == kOff) ||
-     (stateR_b1 == kOff && stateL_b1 == kSet))
+  if(((stateR_b1 == kSet && stateL_b1 == kOff) ||
+     (stateR_b1 == kOff && stateL_b1 == kSet)) &&
+     !trainIn_b1) {
     fade_b1 = 1;
+    trainIn_b1 = true;
+  } else 
   
 // Is the train exiting?
-  else
     if((stateR_b1 == kClear && stateL_b1 == kOff) ||
-       (stateR_b1 == kOff   && stateL_b1 == kClear))
+       (stateR_b1 == kOff   && stateL_b1 == kClear)) {
       fade_b1 = -1;
+      trainIn_b1 = false;
+    }
     
   if(fade_b1 != 0) {
     
