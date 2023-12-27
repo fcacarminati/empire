@@ -36,7 +36,8 @@ short stateR_b1 = 0;  // logical state of right side
                       // 0 off; 1 set; 2 cleared; 3 on
 short stateL_b1 = 0;  // logical state of left side
 short fade_b1 = 0;    // fading direction
-bool trainIn_b1 = false;
+bool trainInL_b1 = false;
+bool trainInR_b1 = false;
 
 // Bridge 2
 int redR_b2 = 7;
@@ -56,8 +57,10 @@ short stateR_b2 = 0;  // logical state of right side
                       // 0 off; 1 set; 2 cleared; 3 on
 short stateL_b2 = 0;  // logical state of left side
 short fade_b2 = 0;
+bool trainInL_b2 = false;
+bool trainInR_b2 = false;
 
-const int fadeAmount = 5;    // how many points to fade the LED by
+const int fadeAmount = 1;    // how many points to fade the LED by
 
 enum state {kOn, kSet, kClear, kOff};
 
@@ -99,24 +102,25 @@ void loop() {
   stateL_b1 = curL_b1 + 2*preL_b1;
   preL_b1 = curL_b1;
   
+  if(!(trainInL_b1 || trainInR_b1)) {
+
 // Is the train entering?
-  if(((stateR_b1 == kSet && stateL_b1 == kOff) ||
-     (stateR_b1 == kOff && stateL_b1 == kSet)) &&
-     !trainIn_b1) {
-    fade_b1 = 1;
-    trainIn_b1 = true;
-  } else 
+    trainInR_b1 = stateR_b1 == kSet && stateL_b1 == kOff;
+    trainInL_b1 = stateR_b1 == kOff && stateL_b1 == kSet;
+    if(trainInR_b1 || trainInL_b1)
+      fade_b1 = 1;
+  } else {
   
 // Is the train exiting?
-    if((stateR_b1 == kClear && stateL_b1 == kOff) ||
-       (stateR_b1 == kOff   && stateL_b1 == kClear)) {
+    trainInR_b1 = !(stateR_b1 == kOff && stateL_b1 == kClear);
+    trainInL_b1 = !(stateR_b1 == kClear && stateL_b1 == kOff);
+    if(!(trainInL_b1 || trainInR_b1)) 
       fade_b1 = -1;
-      trainIn_b1 = false;
-    }
-    
+  }
+
   if(fade_b1 != 0) {
     
-    if(millis()-fademils_b1 > 50) {
+    if(millis()-fademils_b1 > 5) {
       fademils_b1 = millis();
       
       // change the brightness for next time through the loop:
