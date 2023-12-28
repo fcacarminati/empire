@@ -9,13 +9,17 @@
 // D4  driver read red lights
 // D5  digital input for sensor 1R
 // D6  digital input for sensor 1L
+// D12 led for train in from right
+// A0  led for train in from left
 //
 // Bridge 2
 // D7  driver right red lights
 // D9  driver bridge lights
 // D8  driver left red lights
-// D10  digital input for sensor 2R
+// D10 digital input for sensor 2R
 // D11 digital input dor sensor 2L
+// A1  led for train in from right
+// A2  let for train in from left
 //
  
 // Bridge 1
@@ -24,6 +28,8 @@ int lights_b1 = 3; // pin white lights
 int redL_b1 = 4;   // pin for left red lights
 int sensR_b1 = 5;  // right sensor
 int sensL_b1 = 6;  // left sensor
+int tInR_b1 = 12;  // led for train in from right
+int tInL_b1 = A0;  // led for train in from left
 int brightness_b1 = 0;
 unsigned long fademils_b1 = millis();
 unsigned long blinkred_b1 = millis();
@@ -45,6 +51,8 @@ int lights_b2 = 9;
 int redL_b2 = 8;
 int sensR_b2 = 10;
 int sensL_b2 = 11;
+int tInR_b2 = A1;  // led for train in from right
+int tInL_b2 = A2;  // led for train in from left
 int brightness_b2 = 0;
 unsigned long fademils_b2 = millis();
 unsigned long blinkred_b2 = millis();
@@ -73,15 +81,14 @@ void setup() {
   pinMode(redL_b1, OUTPUT);
   pinMode(sensR_b1, INPUT);
   pinMode(sensL_b1, INPUT);
+  pinMode(tInR_b1, OUTPUT);
+  pinMode(tInL_b1, OUTPUT);
   
   digitalWrite(redR_b1, HIGH);
   digitalWrite(lights_b1, HIGH);
   digitalWrite(redL_b1, HIGH);
-
-  pinMode(12, OUTPUT);
-  digitalWrite(12,LOW);
-  pinMode(A0, OUTPUT);
-  digitalWrite(A0, LOW);
+  digitalWrite(tInR_b1,LOW);
+  digitalWrite(tInL_b1, LOW);
   
   // Bridge 2
   pinMode(redR_b2, OUTPUT);
@@ -89,35 +96,41 @@ void setup() {
   pinMode(redL_b2, OUTPUT);
   pinMode(sensR_b2, INPUT);
   pinMode(sensL_b2, INPUT);
+  pinMode(tInR_b2, OUTPUT);
+  pinMode(tInL_b2, OUTPUT);
   
   digitalWrite(redR_b2, HIGH);
   digitalWrite(lights_b2, HIGH);
   digitalWrite(redL_b2, HIGH);
+  digitalWrite(tInR_b2,LOW);
+  digitalWrite(tInL_b2, LOW);
   
   Serial.begin(57600); 
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
+  const int nrep = 5;
+  const double hnorm = 1./nrep;
+  
   curR_b1 = 0;
-  for(int i=0; i<5; ++i) {
+  for(int i=0; i<nrep; ++i) {
     curR_b1 += digitalRead(sensR_b1);
     delay(10);
   }
-  curR_b1 = curR_b1*0.2+0.5;
+  curR_b1 = curR_b1*hnorm+0.5;
   stateR_b1 = curR_b1 + 2*preR_b1;
   preR_b1 = curR_b1;
   
   curL_b1 = 0;
-  for(int i=0; i<5; ++i) {
+  for(int i=0; i<nrep; ++i) {
     curL_b1 += digitalRead(sensL_b1);
     delay(10);
   }
-  curL_b1 = curL_b1*0.2+0.5;
+  curL_b1 = curL_b1*hnorm+0.5;
   stateL_b1 = curL_b1 + 2*preL_b1;
   preL_b1 = curL_b1;
 
-  if(stateR_b1 == kClear|| stateR_b1 == kSet) Serial.println(stateR_b1);
  // Serial.println(stateL_b1);
 
   if(!(trainInL_b1 || trainInR_b1)) {
@@ -137,14 +150,14 @@ void loop() {
   }
 
   if(trainInR_b1) 
-    digitalWrite(12, HIGH);
+    digitalWrite(tInR_b1, HIGH);
   else
-    digitalWrite(12, LOW);
+    digitalWrite(tInR_b1, LOW);
 
   if(trainInL_b1) 
-    digitalWrite(A0, HIGH);
+    digitalWrite(tInL_b1, HIGH);
   else
-    digitalWrite(A0, LOW);
+    digitalWrite(tInL_b1, LOW);
     
   if(fade_b1 != 0) {
     
