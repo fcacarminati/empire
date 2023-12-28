@@ -60,9 +60,9 @@ short fade_b2 = 0;
 bool trainInL_b2 = false;
 bool trainInR_b2 = false;
 
-const int fadeAmount = 2;    // how many points to fade the LED by
+const int fadeAmount = 5;    // how many points to fade the LED by
 
-enum state {kOn, kSet, kClear, kOff};
+enum state {kOn, kClear, kSet, kOff};
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -99,19 +99,32 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  curR_b1 = digitalRead(sensR_b1);
+  curR_b1 = 0;
+  for(int i=0; i<5; ++i) {
+    curR_b1 += digitalRead(sensR_b1);
+    delay(10);
+  }
+  curR_b1 = curR_b1*0.2+0.5;
   stateR_b1 = curR_b1 + 2*preR_b1;
   preR_b1 = curR_b1;
   
-  curL_b1 = digitalRead(sensL_b1);
+  curL_b1 = 0;
+  for(int i=0; i<5; ++i) {
+    curL_b1 += digitalRead(sensL_b1);
+    delay(10);
+  }
+  curL_b1 = curL_b1*0.2+0.5;
   stateL_b1 = curL_b1 + 2*preL_b1;
   preL_b1 = curL_b1;
+
+  if(stateR_b1 == kClear|| stateR_b1 == kSet) Serial.println(stateR_b1);
+ // Serial.println(stateL_b1);
 
   if(!(trainInL_b1 || trainInR_b1)) {
 
 // Is the train entering?
-    if(!trainInR_b1) trainInR_b1 = (stateR_b1 == kSet) && (stateL_b1 == kOff);
-    if(!trainInL_b1) trainInL_b1 = (stateR_b1 == kOff) && (stateL_b1 == kSet);
+    trainInR_b1 = (stateR_b1 == kSet) && (stateL_b1 == kOff);
+    trainInL_b1 = (stateR_b1 == kOff) && (stateL_b1 == kSet);
     if(trainInR_b1 || trainInL_b1)
       fade_b1 = 1;
   } else {
@@ -135,7 +148,7 @@ void loop() {
     
   if(fade_b1 != 0) {
     
-    if(millis()-fademils_b1 > 100) {
+    if(millis()-fademils_b1 > 50) {
       fademils_b1 = millis();
       
       // change the brightness for next time through the loop:
@@ -143,7 +156,6 @@ void loop() {
       
       // set the brightness bridge lights
       analogWrite(lights_b1, max(0,255-brightness_b1));
-      Serial.println(brightness_b1);
       
       // stop fading if we have reached max or min
       if(brightness_b1 <= 0) {
