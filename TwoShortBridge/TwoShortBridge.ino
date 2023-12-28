@@ -60,7 +60,7 @@ short fade_b2 = 0;
 bool trainInL_b2 = false;
 bool trainInR_b2 = false;
 
-const int fadeAmount = 1;    // how many points to fade the LED by
+const int fadeAmount = 2;    // how many points to fade the LED by
 
 enum state {kOn, kSet, kClear, kOff};
 
@@ -77,6 +77,11 @@ void setup() {
   digitalWrite(redR_b1, HIGH);
   digitalWrite(lights_b1, HIGH);
   digitalWrite(redL_b1, HIGH);
+
+  pinMode(12, OUTPUT);
+  digitalWrite(12,LOW);
+  pinMode(A0, OUTPUT);
+  digitalWrite(A0, LOW);
   
   // Bridge 2
   pinMode(redR_b2, OUTPUT);
@@ -101,33 +106,44 @@ void loop() {
   curL_b1 = digitalRead(sensL_b1);
   stateL_b1 = curL_b1 + 2*preL_b1;
   preL_b1 = curL_b1;
-  
+
   if(!(trainInL_b1 || trainInR_b1)) {
 
 // Is the train entering?
-    trainInR_b1 = stateR_b1 == kSet && stateL_b1 == kOff;
-    trainInL_b1 = stateR_b1 == kOff && stateL_b1 == kSet;
+    if(!trainInR_b1) trainInR_b1 = (stateR_b1 == kSet) && (stateL_b1 == kOff);
+    if(!trainInL_b1) trainInL_b1 = (stateR_b1 == kOff) && (stateL_b1 == kSet);
     if(trainInR_b1 || trainInL_b1)
       fade_b1 = 1;
   } else {
   
 // Is the train exiting?
-    trainInR_b1 = !(stateR_b1 == kOff && stateL_b1 == kClear);
-    trainInL_b1 = !(stateR_b1 == kClear && stateL_b1 == kOff);
+    if(trainInR_b1) trainInR_b1 = !(stateR_b1 == kOff && stateL_b1 == kClear);
+    if(trainInL_b1) trainInL_b1 = !(stateR_b1 == kClear && stateL_b1 == kOff);
     if(!(trainInL_b1 || trainInR_b1)) 
       fade_b1 = -1;
   }
 
+  if(trainInR_b1) 
+    digitalWrite(12, HIGH);
+  else
+    digitalWrite(12, LOW);
+
+  if(trainInL_b1) 
+    digitalWrite(A0, HIGH);
+  else
+    digitalWrite(A0, LOW);
+    
   if(fade_b1 != 0) {
     
-    if(millis()-fademils_b1 > 5) {
+    if(millis()-fademils_b1 > 100) {
       fademils_b1 = millis();
       
       // change the brightness for next time through the loop:
       brightness_b1 = brightness_b1 + fade_b1 * fadeAmount;
       
       // set the brightness bridge lights
-      analogWrite(lights_b1, brightness_b1);
+      analogWrite(lights_b1, max(0,255-brightness_b1));
+      Serial.println(brightness_b1);
       
       // stop fading if we have reached max or min
       if(brightness_b1 <= 0) {
