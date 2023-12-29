@@ -39,7 +39,7 @@ short curL_b1 = 0;    // current state of left sensor
 short preR_b1 = 0;    // previous state of right sensor
 short preL_b1 = 0;    // previous state of left sensor
 short stateR_b1 = 0;  // logical state of right side
-// 0 off; 1 set; 2 cleared; 3 on
+// 0 off; 1 cleared; 2 set; 3 on
 short stateL_b1 = 0;  // logical state of left side
 short fade_b1 = 0;    // fading direction
 bool trainInL_b1 = false;
@@ -62,7 +62,7 @@ short curL_b2 = 0;
 short preR_b2 = 0;
 short preL_b2 = 0;
 short stateR_b2 = 0;  // logical state of right side
-// 0 off; 1 set; 2 cleared; 3 on
+// 0 off; 1 cleared; 2 set; 3 on
 short stateL_b2 = 0;  // logical state of left side
 short fade_b2 = 0;
 bool trainInL_b2 = false;
@@ -70,7 +70,7 @@ bool trainInR_b2 = false;
 
 const int fadeAmount = 5;    // how many points to fade the LED by
 
-enum state {kOn, kClear, kSet, kOff};
+enum State {kOn, kClear, kSet, kOff};
 
 // the setup routine runs once when you press reset:
 void setup() {
