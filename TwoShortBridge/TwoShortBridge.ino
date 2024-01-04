@@ -138,14 +138,15 @@ void startScroll(unsigned char addr, bool left, bool right) {
 }
 
 void speedWrite(unsigned char addr, float speed) {
-  char cspeed[17];
+  char cstring[21];
+  char cspeed[6];
 //  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(2,51);
-  display.print("Sp: ");
-  display.println(speed);
-//  display.println(" kmh");
+  dtostrf(speed, 4, 1, cspeed);
+  snprintf(cstring,20,"Sp: %s kmh",cspeed);
+  display.println(cstring);
   display.display();
 }
 
