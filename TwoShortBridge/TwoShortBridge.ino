@@ -137,11 +137,14 @@ void startScroll(unsigned char addr, bool left, bool right) {
   display.display();
 }
 
-void speedWrite(unsigned char addr, float speed) {
+void speedWrite(unsigned char addr, float speed, bool left, bool right) {
   char cstring[12];
   char cspeed[6];
-//  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
-//  display.clearDisplay();
+  /*
+  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+  display.clearDisplay();
+  startScroll(addr, left, right);
+  */
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0,50);
@@ -239,7 +242,7 @@ void loop() {
     if ((trainInR_b1 && (stateL_b1 == kSet)) ||
         (trainInL_b1 && (stateR_b1 == kSet))) {
         timeDelta_b1 = millis() - timeStart_b1;
-        speedWrite(DISPLAY_B1,speedConv/timeDelta_b1);
+        speedWrite(DISPLAY_B1,speedConv/timeDelta_b1,trainInR_b1,trainInL_b1);
       }
     if (trainInR_b1) trainInR_b1 = !(stateR_b1 == kOff && stateL_b1 == kClear);
     if (trainInL_b1) trainInL_b1 = !(stateR_b1 == kClear && stateL_b1 == kOff);
