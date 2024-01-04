@@ -43,6 +43,8 @@ void setup() {
 }
 
 void loop() {
+  static int il = 0;
+  Serial.println(++il);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Default OLED address, usually  
   display.clearDisplay();
   display.setTextSize(2);

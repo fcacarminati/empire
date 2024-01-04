@@ -138,14 +138,14 @@ void startScroll(unsigned char addr, bool left, bool right) {
 }
 
 void speedWrite(unsigned char addr, float speed) {
-  char c_speed[7];
-  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+  char cspeed[17];
+//  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.setCursor(10,51);
-  display.print("Sp:");
-  snprintf(c_speed,7,"%6.2",speed);
-  display.println(c_speed);
+  display.setCursor(2,51);
+  display.print("Sp: ");
+  display.println(speed);
+//  display.println(" kmh");
   display.display();
 }
 
@@ -223,10 +223,12 @@ void loop() {
     // Is the train entering?
     trainInR_b1 = (stateR_b1 == kSet) && (stateL_b1 == kOff);
     trainInL_b1 = (stateR_b1 == kOff) && (stateL_b1 == kSet);
-    if (trainInR_b1 || trainInL_b1)
+    
+    if (trainInR_b1 || trainInL_b1) {
       fade_b1 = 1;
       timeStart_b1 = millis();
       startScroll(DISPLAY_B1,trainInR_b1,trainInL_b1);
+    }
   } else {
 
     // Is the train exiting?
