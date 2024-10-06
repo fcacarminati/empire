@@ -1,12 +1,7 @@
-/*
-   Switch test
-*/
-
-#include "Servo.h"
-
 /* 
  *  Switch class based derived from the Servo library class
  */
+#include "Servo.h"
 class Switch: public Servo {
 public:
   Switch(int spin, int dccpin, int button, int straight, int curve): 
@@ -68,29 +63,3 @@ private:
   char m_rot;             // rotation from straight to curve
   bool m_state;           // state 
 };
-
-/*
- * 
- */
-int middle=1300;
-int swing=200;
-Switch mySwitch(9,4,8,middle-swing, middle+swing);
-
-// The setup function runs once when you press reset or power the board
-void setup() {
-#if DEBUG
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(10,OUTPUT);
-  digitalWrite(10,HIGH);
-#endif
-  mySwitch.Init();
-  delay(1000);
-  Serial.begin(115200);
-}
-
-// The loop function runs over and over again forever
-void loop() {
- 
-  mySwitch.Change(mySwitch.readButton() == HIGH);
-
-}
