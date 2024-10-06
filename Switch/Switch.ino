@@ -69,33 +69,51 @@ private:
   bool m_state;           // state 
 };
 
-Switch mySwitch(9,4,8,1460-300, 1460+300);
+/*
+ * 
+ */
+int middle=1300;
+int swing=200;
+Switch mySwitch(9,4,8,middle-swing, middle+swing);
 
 // The setup function runs once when you press reset or power the board
 void setup() {
+#if DEBUG
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(10,OUTPUT);
   digitalWrite(10,HIGH);
+#endif
   mySwitch.Init();
   delay(1000);
+  Serial.begin(115200);
 }
 
 // The loop function runs over and over again forever
 void loop() {
  
   static int straight = true;
-  static int ledhighlow = 1;
   
   int buttonState;
   buttonState = mySwitch.readButton();
+  if(buttonState == LOW) Serial.write("LOW\n");
+  else Serial.write("HIGH\n");
 
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
   if (buttonState == LOW) {
     // turn LED on:
-    straight = !straight;
+    straight = false;
     mySwitch.Change(straight);
-    ledhighlow = 1-ledhighlow;
-    digitalWrite(10, ledhighlow);
+#if DEBUG
+    digitalWrite(10, LOW);
+#endif
+    delay(500);
+  } else if (buttonState == HIGH) {
+    // turn LED on:
+    straight = true;
+    mySwitch.Change(straight);
+#if DEBUG
+    digitalWrite(10, HIGH);
+#endif
     delay(500);
   }
 }
