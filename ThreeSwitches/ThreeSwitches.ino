@@ -11,10 +11,6 @@
    D8  => Digital control servo 3
    D9  => Digital relay servo 3
    D10  => Button servo 3 
-   D11 => Sensors side bridge
-   D12 => Sensors side church
-   D13 => Control lights tunnel
-   A0  => Button lights tunnel
 */
 
 #include "Switch.h"
@@ -23,10 +19,18 @@
 /*
  * 
  */
-
-Switch Switch1(1,2,3,1380+200,1380-200);
-Switch Switch2(4,5,6,1380+200,1380-200);
-Switch Switch3(7,8,9,1380+200,1380-200);
+int half1 = 1150;
+int right1 = -180;
+int curve1 = -200;
+Switch Switch1(2,3,4,half1+right1,half1-curve1);
+int half2 = 1600;
+int right2 = 65;
+int curve2 = 100;
+Switch Switch2(5,6,7,half2+right2,half2-curve2);
+int half3 = 1500;
+int right3 = -100;
+int curve3 = -80;
+Switch Switch3(8,9,10,half3+right3,half3-curve3);
 
 // The setup function runs once when you press reset or power the board
 void setup() {
