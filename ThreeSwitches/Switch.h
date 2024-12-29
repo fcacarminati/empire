@@ -1,6 +1,7 @@
 /* 
  *  Switch class based derived from the Servo library class
  */
+
 #include "Servo.h"
 class Switch: public Servo {
 public:
@@ -13,7 +14,9 @@ public:
      m_curve(curve),
      m_curpos(straight),
      m_rot(m_straight>m_curve?-1:1),
-     m_state(true) {
+     m_phase(0),
+     m_prvtime(0),
+     m_curtime(0) {
       pinMode(m_dccpin,OUTPUT);
       pinMode(m_button,INPUT);
      }
@@ -51,15 +54,85 @@ public:
       }
     }
     m_curpos = j;
-    m_state = straight;
   }
+
+  bool Change_async_alt(bool straight) {
+ 
+   if(m_phase == 0) {
+      if(straight) m_phase = 1;
+      else m_phase = -1;
+    }
+ 
+    if(m_phase == 1) {
+      if(m_curpos != m_straight) {
+        m_curtime = millis();
+        if(m_curtime-m_prvtime > 10) {
+          m_curpos -= m_rot;
+          writeMicroseconds(m_curpos);
+          m_prvtime=m_curtime;
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,LOW);
+        }
+      } else 
+          m_phase = 0;
+    } else
+      if(m_phase == -1) {
+        if(m_curpos != m_curve) {
+          m_curtime = millis();
+          if(m_curtime-m_prvtime > 10) {
+            m_curpos += m_rot;
+            writeMicroseconds(m_curpos);
+            m_prvtime=m_curtime;
+            if(m_curpos==(m_curve+m_straight)/2) 
+              digitalWrite(m_dccpin,HIGH);
+          }
+      } else
+          m_phase = 0;
+      }
+  }
+
+bool Change_async(bool straight) {
+ 
+   if(m_phase == 0) {
+      if(straight) m_phase = 1;
+      else m_phase = -1;
+    }
+ 
+    if(m_phase == 1) {
+      if(m_curpos != m_straight) {
+          m_curpos -= m_rot;
+          writeMicroseconds(m_curpos);
+          delay(10);
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,LOW);
+      } else 
+          m_phase = 0;
+    } else
+      if(m_phase == -1) {
+        if(m_curpos != m_curve) {
+            m_curpos += m_rot;
+            writeMicroseconds(m_curpos);
+            delay(10);
+            if(m_curpos==(m_curve+m_straight)/2) 
+              digitalWrite(m_dccpin,HIGH);
+      } else
+          m_phase = 0;
+      }
+  }
+
 private:
-  unsigned char m_spin;   // pin of the servo
-  unsigned char m_dccpin; // pin to control dcc relay
-  unsigned char m_button; // pin for manual button
-  short int m_straight;   // straight milliseconds
-  short int m_curve;      // curve milliseconds
-  short int m_curpos;     // current position
-  char m_rot;             // rotation from straight to curve
-  bool m_state;           // state 
+  unsigned char m_spin;    // pin of the servo
+  unsigned char m_dccpin;  // pin to control dcc relay
+  unsigned char m_button;  // pin for manual button
+  short int m_straight;    // straight milliseconds
+  short int m_curve;       // curve milliseconds
+  short int m_curpos;      // current position
+  char m_rot;              // rotation from straight to curve
+  
+  short int m_phase;       // phase -1 from straight to curve
+                           //        0 no change
+                           //        1 from curve to straight
+  unsigned long m_prvtime; // previous time for async rotation
+  unsigned long m_curtime; // current time for async rotation
+ 
 };
