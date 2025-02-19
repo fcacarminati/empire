@@ -16,7 +16,10 @@ public:
      m_rot(m_straight>m_curve?-1:1),
      m_phase(0),
      m_prvtime(0),
-     m_curtime(0) {
+     m_curtime(0),
+     m_idle(true),
+     m_incr(1),
+     m_limit(straight) {
       pinMode(m_dccpin,OUTPUT);
       pinMode(m_button,INPUT);
      }
@@ -120,6 +123,33 @@ bool Change_async(bool straight) {
       }
   }
 
+bool Change_async_new(bool straight) {
+ 
+   if(m_idle) {
+      if(straight) {
+        if(m_curpos == m_straight) return;
+        m_incr = -m_rot;
+        m_limit = m_straight;
+      } else {
+        if(m_curpos == m_curve) return;
+        m_incr = m_rot;
+        m_limit = m_curve;
+      }
+      m_idle = false;
+    }
+ 
+    if(!m_idle) {
+      if(m_curpos != m_limit) {
+          m_curpos += m_incr;
+          writeMicroseconds(m_curpos);
+          delay(10);
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,(m_limit==m_curve));
+      } else 
+          m_idle = true;
+    } 
+  }
+
 private:
   unsigned char m_spin;    // pin of the servo
   unsigned char m_dccpin;  // pin to control dcc relay
@@ -134,5 +164,8 @@ private:
                            //        1 from curve to straight
   unsigned long m_prvtime; // previous time for async rotation
   unsigned long m_curtime; // current time for async rotation
- 
-};
+
+  bool m_idle;
+  char m_incr;
+  short int m_limit;
+ };
