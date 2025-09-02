@@ -37,6 +37,9 @@ public:
   }
   
   bool Change(bool straight) {
+    /*
+    Synchronous version.  
+    */
     short int j;
     if(straight) {
       for(j=m_curpos; j != m_straight; j=j-m_rot) {
@@ -60,6 +63,9 @@ public:
   }
 
   bool Change_async_alt(bool straight) {
+    /*
+    Asynchronous version without any wait
+    */
  
    if(m_phase == 0) {
       if(straight) m_phase = 1;
@@ -95,6 +101,9 @@ public:
   }
 
 bool Change_async(bool straight) {
+  /*
+  Asynchronous version, but still with a 10ms wait
+  */
  
    if(m_phase == 0) {
       if(straight) m_phase = 1;
@@ -124,6 +133,9 @@ bool Change_async(bool straight) {
   }
 
 bool Change_async_new(bool straight) {
+  /*
+  Asynchronous version with simpper opreational part and 10ms wait
+  */
  
    if(m_idle) {
       if(straight) {
