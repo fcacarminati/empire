@@ -36,7 +36,7 @@ public:
     return digitalRead(m_button);
   }
   
-  bool Change(bool straight) {
+  bool Change_synch(bool straight) {
     /*
     Synchronous version.  
     */
@@ -62,7 +62,7 @@ public:
     m_curpos = j;
   }
 
-  bool Change_async_alt(bool straight) {
+  bool Change_async_1(bool straight) {
     /*
     Asynchronous version without any wait
     */
@@ -100,7 +100,7 @@ public:
       }
   }
 
-bool Change_async(bool straight) {
+bool Change_async2(bool straight) {
   /*
   Asynchronous version, but still with a 10ms wait
   */
@@ -132,7 +132,7 @@ bool Change_async(bool straight) {
       }
   }
 
-bool Change_async_new(bool straight) {
+bool Change_async3(bool straight) {
   /*
   Asynchronous version with simpler opreational part and 10ms wait
   */
@@ -162,7 +162,7 @@ bool Change_async_new(bool straight) {
     } 
   }
 
-  bool Change_async_ultimate(bool straight) {
+  bool Change(bool straight) {
   /*
   Asynchronous version, but still with a 10ms wait
   */
