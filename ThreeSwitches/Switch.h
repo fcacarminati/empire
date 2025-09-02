@@ -134,16 +134,16 @@ bool Change_async(bool straight) {
 
 bool Change_async_new(bool straight) {
   /*
-  Asynchronous version with simpper opreational part and 10ms wait
+  Asynchronous version with simpler opreational part and 10ms wait
   */
  
    if(m_idle) {
       if(straight) {
-        if(m_curpos == m_straight) return;
+        if(m_curpos == m_straight) return true;
         m_incr = -m_rot;
         m_limit = m_straight;
       } else {
-        if(m_curpos == m_curve) return;
+        if(m_curpos == m_curve) return true;
         m_incr = m_rot;
         m_limit = m_curve;
       }
@@ -157,6 +157,39 @@ bool Change_async_new(bool straight) {
           delay(10);
           if(m_curpos==(m_curve+m_straight)/2) 
             digitalWrite(m_dccpin,(m_limit==m_curve));
+      } else 
+          m_idle = true;
+    } 
+  }
+
+  bool Change_async_ultimate(bool straight) {
+  /*
+  Asynchronous version, but still with a 10ms wait
+  */
+ 
+   if(m_idle) {
+      if(straight) {
+        if(m_curpos == m_straight) return true;
+        m_incr = -m_rot;
+        m_limit = m_straight;
+      } else {
+        if(m_curpos == m_curve) return true;
+        m_incr = m_rot;
+        m_limit = m_curve;
+      }
+      m_idle = false;
+    }
+ 
+    if(!m_idle) {
+      if(m_curpos != m_limit) {
+        m_curtime = millis();
+        if(m_curtime-m_prvtime > 10) {
+          m_curpos += m_incr;
+          writeMicroseconds(m_curpos);
+          m_prvtime=m_curtime;
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,(m_limit==m_curve));
+        }
       } else 
           m_idle = true;
     } 
