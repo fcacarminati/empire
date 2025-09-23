@@ -78,8 +78,8 @@ float timeStart_b2 = 0;
 float timeDelta_b2 = 0;
 
 const int fadeAmount = 5;    // how many points to fade the LED by
-const float bridgeLength = 20; // bridge length in cm
-const float speedConv = bridgeLength * 87 * 1e-5 * (3600 * 1e3); 
+const double bridgeLength = 20; // bridge length in cm
+const double speedConv = bridgeLength * 87 * 1e-5 * (3600 * 1e3); 
 
 enum State {kOn, kClear, kSet, kOff};
 const char *State_name[] = {"On","Clear","Set","Off"};
@@ -132,7 +132,7 @@ const unsigned char TrainLogoL [] PROGMEM = {
 
 void startScroll(unsigned char addr, bool left, bool right) {
  if(addr != oldaddr) {
-#if DEBUG
+#ifdef DEBUG
     Serial.println(F("StartScroll: Changing address"));
 #endif
     display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
