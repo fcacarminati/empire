@@ -20,7 +20,7 @@
 // D10  driver bridge lights
 // D11  driver left red lights
 // D12 digital input for sensor 2R
-// D13 digital input dor sensor 2L
+// A3 digital input dor sensor 2L
 // A1  led for train in from right
 // A2  let for train in from left
 //
@@ -57,7 +57,7 @@ int redR_b2 = 8;
 int lights_b2 = 10;
 int redL_b2 = 11;
 int sensR_b2 = 12;
-int sensL_b2 = 13;
+int sensL_b2 = A3;
 int tInR_b2 = A1;  // led for train in from right
 int tInL_b2 = A2;  // led for train in from left
 int brightness_b2 = 0;
