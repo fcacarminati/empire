@@ -8,19 +8,19 @@
 //
 // Bridge 1
 // D2  driver right red lights
-// D3  driver bridge lights
-// D4  driver read red lights
-// D5  digital input for sensor 1R
-// D6  digital input for sensor 1L
-// D12 led for train in from right
-// A0  led for train in from left
+// D9  driver bridge lights
+// D3  driver read red lights
+// D4  digital input for sensor 1R
+// D5  digital input for sensor 1L
+// D6 led for train in from right
+// D7  led for train in from left
 //
 // Bridge 2
-// D7  driver right red lights
-// D9  driver bridge lights
-// D8  driver left red lights
-// D10 digital input for sensor 2R
-// D11 digital input dor sensor 2L
+// D8  driver right red lights
+// D10  driver bridge lights
+// D11  driver left red lights
+// D12 digital input for sensor 2R
+// D13 digital input dor sensor 2L
 // A1  led for train in from right
 // A2  let for train in from left
 //
@@ -28,21 +28,21 @@
 // A5 SCL for OLED
 
 // Bridge 1
-int redR_b1 = 2;   // pin for right red lights
-int lights_b1 = 3; // pin white lights
-int redL_b1 = 4;   // pin for left red lights
-int sensR_b1 = 5;  // right sensor
-int sensL_b1 = 6;  // left sensor
-int tInR_b1 = 12;  // led for train in from right
-int tInL_b1 = A0;  // led for train in from left
+const int redR_b1 = 2;   // pin for right red lights
+const int lights_b1 = 9; // pin white lights
+const int redL_b1 = 3;   // pin for left red lights
+const int sensR_b1 = 4;  // right sensor
+const int sensL_b1 = 5;  // left sensor
+const int tInR_b1 = 6;  // led for train in from right
+const int tInL_b1 = 7;  // led for train in from left
 int brightness_b1 = 0;
-unsigned long fademils_b1 = millis();
-unsigned long blinkred_b1 = millis();
+unsigned long fademils_b1 = 0;
+unsigned long blinkred_b1 = 0;
 int highlow_b1 = 0;
 short curR_b1 = 0;    // current state of right sensor
 short curL_b1 = 0;    // current state of left sensor
-short preR_b1 = 0;    // previous state of right sensor
-short preL_b1 = 0;    // previous state of left sensor
+short preR_b1 = 1;    // previous state of right sensor
+short preL_b1 = 1;    // previous state of left sensor
 short stateR_b1 = 0;  // logical state of right side
 // 0 off; 1 cleared; 2 set; 3 on
 short stateL_b1 = 0;  // logical state of left side
@@ -53,21 +53,21 @@ float timeStart_b1 = 0;
 float timeDelta_b1 = 0;
 
 // Bridge 2
-int redR_b2 = 7;
-int lights_b2 = 9;
-int redL_b2 = 8;
-int sensR_b2 = 10;
-int sensL_b2 = 11;
+int redR_b2 = 8;
+int lights_b2 = 10;
+int redL_b2 = 11;
+int sensR_b2 = 12;
+int sensL_b2 = 13;
 int tInR_b2 = A1;  // led for train in from right
 int tInL_b2 = A2;  // led for train in from left
 int brightness_b2 = 0;
-unsigned long fademils_b2 = millis();
-unsigned long blinkred_b2 = millis();
+unsigned long fademils_b2 = 0;
+unsigned long blinkred_b2 = 0;
 int highlow_b2 = 0;
 short curR_b2 = 0;
 short curL_b2 = 0;
-short preR_b2 = 0;
-short preL_b2 = 0;
+short preR_b2 = 1;
+short preL_b2 = 1;
 short stateR_b2 = 0;  // logical state of right side
 // 0 off; 1 cleared; 2 set; 3 on
 short stateL_b2 = 0;  // logical state of left side
@@ -82,9 +82,20 @@ const float bridgeLength = 20; // bridge length in cm
 const float speedConv = bridgeLength * 87 * 1e-5 * (3600 * 1e3); 
 
 enum State {kOn, kClear, kSet, kOff};
+const char *State_name[] = {"On","Clear","Set","Off"};
+
+#define DEBUG 1
 
 //------------------------------------------- OLED Stuff -----------------------------------------
-Adafruit_SSD1306 display(128, 64, &Wire, -1);
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+// Declaration for SSD1306 display connected using I2C
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define DISPLAY_B1 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define DISPLAY_B2 0x3D
+//Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+unsigned char oldaddr = 0XFF;
 
 const unsigned char TrainLogoR [] PROGMEM = {
   0x00, 0x00, 0x4f, 0xc0, 0x00, 0x00, 0x00, 0xff, 0xe0, 0x00, 0x00, 0x03, 0xff, 0xf0, 0x00, 0x00, 
@@ -119,13 +130,15 @@ const unsigned char TrainLogoL [] PROGMEM = {
   0xc7, 0xf1, 0xf8, 0x1f, 0x0f, 0x83, 0xe0, 0xf0
 };
 
-#define DISPLAY_B1 0x3C
-#define DISPLAY_B2 0x3D
-
 void startScroll(unsigned char addr, bool left, bool right) {
-  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
-  display.clearDisplay(); 
-  delay(100);
+ if(addr != oldaddr) {
+#if DEBUG
+    Serial.println(F("StartScroll: Changing address"));
+#endif
+    display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+    display.clearDisplay(); 
+    oldaddr = addr;
+  }
   if(left) {
     display.drawBitmap(0, 0, TrainLogoR, 40, 40, SSD1306_WHITE);
     display.startscrollleft(0x00,0x04);
@@ -133,31 +146,43 @@ void startScroll(unsigned char addr, bool left, bool right) {
     display.drawBitmap(0, 0, TrainLogoL, 40, 40, SSD1306_WHITE);
     display.startscrollright(0x00,0x04);
   }
-  delay(100);
   display.display();
 }
 
 void speedWrite(unsigned char addr, float speed, bool left, bool right) {
   char cstring[16];
   char cspeed[8];
-/*
-  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
-  display.clearDisplay();
-  startScroll(addr, left, right);
-*/
+
+ if(addr != oldaddr) {
+#ifdef DEBUG
+    Serial.println(F("SpeedWrite: Changing address"));
+#endif
+    display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+    display.clearDisplay(); 
+    startScroll(addr, left, right);
+    oldaddr = addr;
+  }
+  
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  dtostrf(speed, 6, 1, cspeed);
+  dtostrf(speed, 4, 1, cspeed);
   cspeed[6] = '\0';
-  snprintf(cstring,11,"%s kmh",cspeed);
+  snprintf(cstring,11,"%s km/h",cspeed);
   cstring[11]='\0';
-  display.setCursor(2,51);
-  display.println(cstring);
+  display.setCursor(1,51);
+  display.print(cstring);
   display.display();
 }
 
 void stopDisplay(unsigned char addr) {
-  display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+if(addr != oldaddr) {
+#ifdef DEBUG
+    Serial.println(F("stopDisplay: Changing address"));
+#endif
+    display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
+    display.clearDisplay();
+    oldaddr = addr;
+  }
   display.stopscroll();
   display.clearDisplay();
   display.display();
@@ -172,8 +197,8 @@ void setup() {
   pinMode(redR_b1, OUTPUT);
   pinMode(lights_b1, OUTPUT);
   pinMode(redL_b1, OUTPUT);
-  pinMode(sensR_b1, INPUT);
-  pinMode(sensL_b1, INPUT);
+  pinMode(sensR_b1, INPUT_PULLUP);
+  pinMode(sensL_b1, INPUT_PULLUP);
   pinMode(tInR_b1, OUTPUT);
   pinMode(tInL_b1, OUTPUT);
 
@@ -183,12 +208,15 @@ void setup() {
   digitalWrite(tInR_b1, LOW);
   digitalWrite(tInL_b1, LOW);
 
+  fademils_b1 = millis();
+  blinkred_b1 = millis();
+
   // Bridge 2
   pinMode(redR_b2, OUTPUT);
   pinMode(lights_b2, OUTPUT);
   pinMode(redL_b2, OUTPUT);
-  pinMode(sensR_b2, INPUT);
-  pinMode(sensL_b2, INPUT);
+  pinMode(sensR_b2, INPUT_PULLUP);
+  pinMode(sensL_b2, INPUT_PULLUP);
   pinMode(tInR_b2, OUTPUT);
   pinMode(tInL_b2, OUTPUT);
 
@@ -198,6 +226,11 @@ void setup() {
   digitalWrite(tInR_b2, LOW);
   digitalWrite(tInL_b2, LOW);
 
+  fademils_b2 = millis();
+  blinkred_b2 = millis();
+
+  oldaddr = 0x00;
+  
   Serial.begin(57600);
 }
 
@@ -205,6 +238,13 @@ void setup() {
 void loop() {
   const int nrep = 5;
   const double hnorm = 1. / nrep;
+
+  static bool active_b1 = false;
+
+#ifdef DEBUG
+  static short statePreR_b1 = 99;
+  static short statePreL_b1 = 99;
+#endif
 
 // Debouncing the sensors
   curR_b1 = 0;
@@ -214,6 +254,17 @@ void loop() {
   }
   curR_b1 = curR_b1 * hnorm + 0.5;
   stateR_b1 = curR_b1 + 2 * preR_b1;
+#ifdef DEBUG
+  if(curR_b1 != preR_b1) {
+      Serial.print(F("B1: SensorR = "));
+      Serial.println(curR_b1);
+  } 
+  if(stateR_b1 != statePreR_b1) {
+    Serial.print(F("B1: State R "));
+    Serial.println(State_name[stateR_b1]);
+    statePreR_b1 = stateR_b1;
+  }
+#endif
   preR_b1 = curR_b1;
 
   curL_b1 = 0;
@@ -223,6 +274,17 @@ void loop() {
   }
   curL_b1 = curL_b1 * hnorm + 0.5;
   stateL_b1 = curL_b1 + 2 * preL_b1;
+#ifdef DEBUG
+  if(curL_b1 != preL_b1) {
+      Serial.print(F("B1: SensorL = "));
+      Serial.println(curL_b1);
+  } 
+  if(stateL_b1 != statePreL_b1) {
+    Serial.print(F("B1: State L "));
+    Serial.println(State_name[stateL_b1]);
+    statePreL_b1 = stateL_b1;
+  }
+#endif 
   preL_b1 = curL_b1;
 
   if (!(trainInL_b1 || trainInR_b1)) {
@@ -230,8 +292,14 @@ void loop() {
     // Is the train entering?
     trainInR_b1 = (stateR_b1 == kSet) && (stateL_b1 == kOff);
     trainInL_b1 = (stateR_b1 == kOff) && (stateL_b1 == kSet);
+
+#ifdef DEBUG
+    if(trainInR_b1) Serial.println(F("B1: Train in Right"));
+    if(trainInL_b1) Serial.println(F("B1: Train in Left"));
+#endif
     
     if (trainInR_b1 || trainInL_b1) {
+      active_b1 = true;
       fade_b1 = 1;
       timeStart_b1 = millis();
       startScroll(DISPLAY_B1,trainInR_b1,trainInL_b1);
@@ -288,10 +356,139 @@ void loop() {
       digitalWrite(redR_b1, highlow_b1);
       digitalWrite(redL_b1, 1 - highlow_b1);
     }
-  } else {
+  } else if(active_b1) {
     digitalWrite(redR_b1, HIGH);
     analogWrite(lights_b1, 255);
     digitalWrite(redL_b1, HIGH);
     stopDisplay(DISPLAY_B1);
+    active_b1 = false;
+  }
+
+
+// Bridge 2
+
+  static bool active_b2 = false;
+
+#ifdef DEBUG
+  static short statePreR_b2 = 99;
+  static short statePreL_b2 = 99;
+#endif
+
+// Debouncing the sensors
+  curR_b2 = 0;
+  for (int i = 0; i < nrep; ++i) {
+    curR_b2 += digitalRead(sensR_b2);
+    delay(10);
+  }
+  curR_b2 = curR_b2 * hnorm + 0.5;
+  stateR_b2 = curR_b2 + 2 * preR_b2;
+#ifdef DEBUG
+  if(curR_b2 != preR_b2) {
+      Serial.print(F("B2: SensorR = "));
+      Serial.println(curR_b2);
+  } 
+  if(stateR_b2 != statePreR_b2) {
+    Serial.print(F("B2: State R "));
+    Serial.println(State_name[stateR_b2]);
+    statePreR_b2 = stateR_b2;
+  }
+#endif
+  preR_b2 = curR_b2;
+
+  curL_b2 = 0;
+  for (int i = 0; i < nrep; ++i) {
+    curL_b2 += digitalRead(sensL_b2);
+    delay(10);
+  }
+  curL_b2 = curL_b2 * hnorm + 0.5;
+  stateL_b2 = curL_b2 + 2 * preL_b2;
+#ifdef DEBUG
+  if(curL_b2 != preL_b2) {
+      Serial.print(F("B2: SensorL = "));
+      Serial.println(curL_b2);
+  } 
+  if(stateL_b2 != statePreL_b2) {
+    Serial.print(F("B2: State L "));
+    Serial.println(State_name[stateL_b2]);
+    statePreL_b2 = stateL_b2;
+  }
+#endif 
+  preL_b2 = curL_b2;
+
+  if (!(trainInL_b2 || trainInR_b2)) {
+
+    // Is the train entering?
+    trainInR_b2 = (stateR_b2 == kSet) && (stateL_b2 == kOff);
+    trainInL_b2 = (stateR_b2 == kOff) && (stateL_b2 == kSet);
+
+#ifdef DEBUG
+    if(trainInR_b2) Serial.println(F("B2: Train in Right"));
+    if(trainInL_b2) Serial.println(F("B2: Train in Left"));
+#endif
+    
+    if (trainInR_b2 || trainInL_b2) {
+      active_b2 = true;
+      fade_b2 = 1;
+      timeStart_b2 = millis();
+      startScroll(DISPLAY_B2,trainInR_b2,trainInL_b2);
+    }
+  } else {
+
+    // Is the train exiting?
+    if ((trainInR_b2 && (stateL_b2 == kSet)) ||
+        (trainInL_b2 && (stateR_b2 == kSet))) {
+        timeDelta_b2 = millis() - timeStart_b2;
+        speedWrite(DISPLAY_B2,speedConv/timeDelta_b2,trainInR_b2,trainInL_b2);
+      }
+    if (trainInR_b2) trainInR_b2 = !(stateR_b2 == kOff && stateL_b2 == kClear);
+    if (trainInL_b2) trainInL_b2 = !(stateR_b2 == kClear && stateL_b2 == kOff);
+    if (!(trainInL_b2 || trainInR_b2))
+      fade_b2 = -1;
+  }
+
+  if (trainInR_b2)
+    digitalWrite(tInR_b2, HIGH);
+  else
+    digitalWrite(tInR_b2, LOW);
+
+  if (trainInL_b2)
+    digitalWrite(tInL_b2, HIGH);
+  else
+    digitalWrite(tInL_b2, LOW);
+
+  if (fade_b2 != 0) {
+
+    if (millis() - fademils_b2 > 50) {
+      fademils_b2 = millis();
+
+      // change the brightness for next time through the loop:
+      brightness_b2 = brightness_b2 + fade_b2 * fadeAmount;
+
+      // set the brightness bridge lights
+      analogWrite(lights_b2, max(0, 255 - brightness_b2));
+
+      // stop fading if we have reached max or min
+      if (brightness_b2 <= 0) {
+        brightness_b2 = 0;
+        fade_b2 = 0;
+      } else if (brightness_b2 >= 255) {
+        brightness_b2 = 255;
+        fade_b2 = 0;
+      }
+    }
+  }
+  if (brightness_b2 > 0) {
+    if (millis() - blinkred_b2 > 500) {
+      blinkred_b2 = millis();
+      highlow_b2 = 1 - highlow_b2;
+      digitalWrite(redR_b2, highlow_b2);
+      digitalWrite(redL_b2, 1 - highlow_b2);
+    }
+  } else if (active_b2) {
+    digitalWrite(redR_b2, HIGH);
+    analogWrite(lights_b2, 255);
+    digitalWrite(redL_b2, HIGH);
+    stopDisplay(DISPLAY_B2);
+    active_b2 = false;
   }
 }
