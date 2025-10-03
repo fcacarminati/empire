@@ -11,7 +11,7 @@
 // Bridge 1
 // D2  driver right red lights
 // D9  driver bridge lights
-// D3  driver read red lights
+// D3  driver left red lights
 // D4  digital input for sensor 1R
 // D5  digital input for sensor 1L
 // A0 led for train in from right
