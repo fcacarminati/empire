@@ -139,8 +139,8 @@ const unsigned char TrainLogoL [] PROGMEM = {
 SoftwareSerial softSerial(/*RX=*/ 6, /*TX=*/ 7);
 DFRobotDFPlayerMini myDFPlayer;
 
-void startScroll(unsigned char addr, bool left, bool right) {
- if(addr != oldaddr) {
+void splashScreen(unsigned char addr) {
+  if(addr != oldaddr) {
 #ifdef DEBUG
     Serial.println(F("StartScroll: Changing address"));
 #endif
@@ -149,13 +149,33 @@ void startScroll(unsigned char addr, bool left, bool right) {
     display.clearDisplay(); 
     oldaddr = addr;
   }
-  if(left) {
-    display.drawBitmap(0, 0, TrainLogoR, 40, 40, SSD1306_WHITE);
+
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(2,1);
+  display.println("Bridge");
+  display.println("ready");
+  display.display();
+  delay(100);
+}
+
+void startScroll(unsigned char addr, bool left, bool right) {
+ if(addr != oldaddr) {
+#ifdef DEBUG
+    Serial.println(F("StartScroll: Changing address"));
+#endif
+    display.begin(SSD1306_SWITCHCAPVCC, addr); // Default OLED address, usually  
     delay(500);
+    oldaddr = addr;
+  }
+  display.clearDisplay(); 
+   if(left) {
+    display.drawBitmap(0, 0, TrainLogoR, 40, 40, SSD1306_WHITE);
+    delay(50);
     display.startscrollleft(0x00,0x04);
   } else {
     display.drawBitmap(0, 0, TrainLogoL, 40, 40, SSD1306_WHITE);
-    delay(500);
+    delay(50);
     display.startscrollright(0x00,0x04);
   }
   display.display();
@@ -244,13 +264,18 @@ void setup() {
   blinkred_b2 = millis();
 
   oldaddr = 0x00;
+
+  splashScreen(DISPLAY_B1);
+  splashScreen(DISPLAY_B2);
   
   Serial.begin(57600);
 
+#ifdef DEBUG
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
   softSerial.begin(9600);
-  
+#endif
+
   if (!myDFPlayer.begin(softSerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
     Serial.println(F("Unable to begin:"));
     Serial.println(F("1.Please recheck the connection!"));
@@ -259,7 +284,9 @@ void setup() {
       delay(0); // Code to compatible with ESP8266 watch dog.
     }
   }
+  #ifdef DEBUG
   Serial.println(F("DFPlayer Mini online."));
+  #endif
   
   myDFPlayer.volume(15);  //Set volume value. From 0 to 30
   myDFPlayer.play(2);  //Play the first mp3
