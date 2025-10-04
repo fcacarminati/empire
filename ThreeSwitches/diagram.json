@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "author": "Federico Carminati",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-nano", "id": "nano", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo1", "top": -213.2, "left": -9.6, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "sw1", "top": -168.4, "left": 243.1, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo2", "top": -318.8, "left": -9.6, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -176.4,
+      "left": 157.4,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -110.95,
+      "left": 104.2,
+      "rotate": 180,
+      "attrs": { "value": "300" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": -176.4,
+      "left": 186.2,
+      "attrs": { "color": "red" }
+    },
+    { "type": "wokwi-slide-switch", "id": "sw2", "top": -274, "left": 233.5, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": -282,
+      "left": 157.4,
+      "attrs": { "color": "green" }
+    },
+    { "type": "wokwi-led", "id": "led4", "top": -282, "left": 186.2, "attrs": { "color": "red" } },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": -216.55,
+      "left": 104.2,
+      "rotate": 180,
+      "attrs": { "value": "300" }
+    },
+    { "type": "wokwi-servo", "id": "servo3", "top": -434, "left": -28.8, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "sw3", "top": -389.2, "left": 204.7, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led5",
+      "top": -397.2,
+      "left": 138.2,
+      "attrs": { "color": "green" }
+    },
+    { "type": "wokwi-led", "id": "led6", "top": -397.2, "left": 167, "attrs": { "color": "red" } },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": -331.75,
+      "left": 85,
+      "rotate": 180,
+      "attrs": { "value": "300" }
+    }
+  ],
+  "connections": [
+    [ "servo1:GND", "nano:GND.1", "black", [ "h-86.4", "v288", "h240" ] ],
+    [ "servo1:V+", "nano:5V", "red", [ "h-76.8", "v259.3", "h211.7" ] ],
+    [ "servo1:PWM", "nano:2", "gold", [ "h-67.2", "v125", "h19.2" ] ],
+    [ "sw1:2", "nano:GND.2", "black", [ "v57.6", "h-67.1" ] ],
+    [ "sw1:1", "nano:4", "green", [ "v19.2", "h-96" ] ],
+    [ "servo2:GND", "nano:GND.1", "black", [ "h-105.6", "v374.4", "h259.7" ] ],
+    [ "servo2:V+", "nano:5V", "red", [ "h-96", "v345.7", "h230.4" ] ],
+    [ "servo2:PWM", "nano:5", "gold", [ "h-48", "v153.8", "h144" ] ],
+    [ "r1:2", "nano:3", "blue", [ "h0" ] ],
+    [ "led1:A", "nano:5V", "red", [ "v268.8", "h278.4" ] ],
+    [ "led2:A", "r1:1", "red", [ "v57.6", "h240" ] ],
+    [ "led2:C", "nano:GND.1", "black", [ "v326.4", "h10" ] ],
+    [ "sw2:2", "nano:GND.2", "black", [ "h-38.3", "v244.8" ] ],
+    [ "led4:A", "r2:1", "red", [ "v0" ] ],
+    [ "led3:C", "r2:1", "black", [ "v0" ] ],
+    [ "led3:A", "nano:5V", "red", [ "v0" ] ],
+    [ "led4:C", "nano:GND.1", "black", [ "v0" ] ],
+    [ "sw2:1", "nano:7", "green", [ "v0" ] ],
+    [ "r2:2", "nano:6", "blue", [ "v0" ] ],
+    [ "led1:C", "r1:1", "black", [ "v0" ] ],
+    [ "led6:A", "r3:1", "red", [ "v0" ] ],
+    [ "led5:C", "r3:1", "black", [ "v0" ] ],
+    [ "servo3:PWM", "nano:8", "gold", [ "h-96", "v163.4", "h182.9" ] ],
+    [ "servo3:V+", "nano:5V", "red", [ "v259.3", "h154.1" ] ],
+    [ "servo3:GND", "nano:GND.1", "black", [ "h0" ] ],
+    [ "sw3:2", "sw2:2", "black", [ "v0" ] ],
+    [ "r3:2", "nano:9", "green", [ "v0" ] ],
+    [ "sw3:1", "nano:10", "green", [ "v0" ] ],
+    [ "led6:C", "sw3:2", "green", [ "v0" ] ],
+    [ "led5:A", "nano:5V", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
