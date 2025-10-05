@@ -19,7 +19,7 @@
 /*
  * 
  */
-int half1 = 1150;
+int half1 = 1200;
 int right1 = -180;
 int curve1 = -200;
 Switch Switch1(2,3,4,half1+right1,half1-curve1);

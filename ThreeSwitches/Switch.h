@@ -25,8 +25,12 @@ public:
      }
 
   void Init() {
-      writeMicroseconds(m_straight);
+      writeMicroseconds((m_straight);
       attach(m_spin);
+      delay(1000);
+      writeMicroseconds(m_curve);
+      delay(1000);
+      writeMicroseconds(m_straight);
       digitalWrite(m_dccpin,LOW);
       pinMode(m_button,INPUT_PULLUP);
      }
