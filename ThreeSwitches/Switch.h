@@ -25,7 +25,7 @@ public:
      }
 
   void Init() {
-      writeMicroseconds((m_straight);
+      writeMicroseconds((m_straight+m_curve)/2);
       attach(m_spin);
       delay(1000);
       writeMicroseconds(m_curve);
