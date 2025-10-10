@@ -27,9 +27,9 @@ int half2 = 1600;
 int right2 = 65;
 int curve2 = 100;
 Switch Switch2(5,6,7,half2+right2,half2-curve2);
-int half3 = 1500;
-int right3 = -100;
-int curve3 = -80;
+int half3 = 1450;
+int right3 = -80;//-100;
+int curve3 = -95;//-80;
 Switch Switch3(8,9,10,half3+right3,half3-curve3);
 
 // The setup function runs once when you press reset or power the board
