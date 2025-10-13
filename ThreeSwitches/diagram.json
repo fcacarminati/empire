@@ -63,6 +63,13 @@
       "left": 85,
       "rotate": 180,
       "attrs": { "value": "300" }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled1",
+      "top": 3.14,
+      "left": 269.03,
+      "attrs": { "i2cAddress": "0x3c" }
     }
   ],
   "connections": [
@@ -71,13 +78,13 @@
     [ "servo1:PWM", "nano:2", "gold", [ "h-67.2", "v125", "h19.2" ] ],
     [ "sw1:2", "nano:GND.2", "black", [ "v57.6", "h-67.1" ] ],
     [ "sw1:1", "nano:4", "green", [ "v19.2", "h-96" ] ],
-    [ "servo2:GND", "nano:GND.1", "black", [ "h-105.6", "v374.4", "h259.7" ] ],
+    [ "servo2:GND", "nano:GND.1", "black", [ "h-105.6", "v393.6", "h259.7" ] ],
     [ "servo2:V+", "nano:5V", "red", [ "h-96", "v345.7", "h230.4" ] ],
     [ "servo2:PWM", "nano:5", "gold", [ "h-48", "v153.8", "h144" ] ],
     [ "r1:2", "nano:3", "blue", [ "h0" ] ],
     [ "led1:A", "nano:5V", "red", [ "v268.8", "h278.4" ] ],
     [ "led2:A", "r1:1", "red", [ "v57.6", "h240" ] ],
-    [ "led2:C", "nano:GND.1", "black", [ "v326.4", "h10" ] ],
+    [ "led2:C", "nano:GND.1", "black", [ "v230.4", "h-56.7" ] ],
     [ "sw2:2", "nano:GND.2", "black", [ "h-38.3", "v244.8" ] ],
     [ "led4:A", "r2:1", "red", [ "v0" ] ],
     [ "led3:C", "r2:1", "black", [ "v0" ] ],
@@ -95,7 +102,11 @@
     [ "r3:2", "nano:9", "green", [ "v0" ] ],
     [ "sw3:1", "nano:10", "green", [ "v0" ] ],
     [ "led6:C", "sw3:2", "green", [ "v0" ] ],
-    [ "led5:A", "nano:5V", "green", [ "v0" ] ]
+    [ "led5:A", "nano:5V", "green", [ "v0" ] ],
+    [ "nano:5V", "oled1:VCC", "red", [ "v72", "h124.3", "v-144", "h67.05" ] ],
+    [ "nano:GND.1", "oled1:GND", "black", [ "v33.6", "h114.7", "v-96", "h48" ] ],
+    [ "nano:A4", "oled1:SDA", "#8f4814", [ "v81.6", "h316.3", "v-172.8", "h-76.8" ] ],
+    [ "nano:A5", "oled1:SCL", "#8f4814", [ "v91.2", "h316.3", "v-192", "h-86.4" ] ]
   ],
   "dependencies": {}
 }

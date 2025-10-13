@@ -20,27 +20,33 @@ public:
      m_idle(true),
      m_incr(1),
      m_limit(straight) {
-      pinMode(m_dccpin,OUTPUT);
-      pinMode(m_button,INPUT);
      }
 
   void Init() {
+    // Init pins here
+      pinMode(m_dccpin,OUTPUT);
+      pinMode(m_button,INPUT_PULLUP);
+
       writeMicroseconds((m_straight+m_curve)/2);
       attach(m_spin);
+      writeMicroseconds((m_straight+m_curve)/2);
       delay(1000);
       writeMicroseconds(m_curve);
       delay(1000);
       writeMicroseconds(m_straight);
       digitalWrite(m_dccpin,LOW);
-      pinMode(m_button,INPUT_PULLUP);
      }
 
   int readButton() const {
     /* Read the button */
+#ifdef DEBUG
+    delay(5);
+#endif
     return digitalRead(m_button);
   }
   
-  bool Change_synch(bool straight) {
+#ifdef NEVER
+  void Change_synch(bool straight) {
     /*
     Synchronous version.  
     */
@@ -66,7 +72,7 @@ public:
     m_curpos = j;
   }
 
-  bool Change_async_1(bool straight) {
+  void Change_async_1(bool straight) {
     /*
     Asynchronous version without any wait
     */
@@ -104,7 +110,7 @@ public:
       }
   }
 
-bool Change_async2(bool straight) {
+void Change_async2(bool straight) {
   /*
   Asynchronous version, but still with a 10ms wait
   */
@@ -136,7 +142,7 @@ bool Change_async2(bool straight) {
       }
   }
 
-bool Change_async3(bool straight) {
+void Change_async3(bool straight) {
   /*
   Asynchronous version with simpler opreational part and 10ms wait
   */
@@ -165,19 +171,20 @@ bool Change_async3(bool straight) {
           m_idle = true;
     } 
   }
+#endif
 
-  bool Change(bool straight) {
+void Change(bool straight) {
   /*
   Asynchronous version, but still with a 10ms wait
   */
  
    if(m_idle) {
       if(straight) {
-        if(m_curpos == m_straight) return true;
+        if(m_curpos == m_straight) return;
         m_incr = -m_rot;
         m_limit = m_straight;
       } else {
-        if(m_curpos == m_curve) return true;
+        if(m_curpos == m_curve) return;
         m_incr = m_rot;
         m_limit = m_curve;
       }
