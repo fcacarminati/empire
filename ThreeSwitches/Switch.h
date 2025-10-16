@@ -34,6 +34,7 @@ public:
       writeMicroseconds(m_curve);
       delay(1000);
       writeMicroseconds(m_straight);
+      delay(1000);
       digitalWrite(m_dccpin,LOW);
      }
 
@@ -207,21 +208,21 @@ void Change(bool straight) {
   }
 
 private:
-  unsigned char m_spin;    // pin of the servo
-  unsigned char m_dccpin;  // pin to control dcc relay
-  unsigned char m_button;  // pin for manual button
-  short int m_straight;    // straight milliseconds
-  short int m_curve;       // curve milliseconds
-  short int m_curpos;      // current position
-  char m_rot;              // rotation from straight to curve
+  uint8_t m_spin;      // pin of the servo
+  uint8_t m_dccpin;    // pin to control dcc relay
+  uint8_t m_button;    // pin for manual button
+  uint16_t m_straight; // straight milliseconds
+  uint16_t m_curve;    // curve milliseconds
+  uint16_t m_curpos;   // current position
+  int8_t  m_rot;       // rotation from straight to curve
   
-  short int m_phase;       // phase -1 from straight to curve
+  int16_t m_phase;         // phase -1 from straight to curve
                            //        0 no change
                            //        1 from curve to straight
   unsigned long m_prvtime; // previous time for async rotation
   unsigned long m_curtime; // current time for async rotation
 
   bool m_idle;
-  char m_incr;
-  short int m_limit;
+  int8_t m_incr;
+  uint16_t m_limit;
  };
