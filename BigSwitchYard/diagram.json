@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "author": "Federico Carminati",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": -156.6,
+      "left": -209.8,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ili9341",
+      "id": "lcd1",
+      "top": -206.3,
+      "left": 97.2,
+      "rotate": 90,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "lcd1:VCC", "uno:5V", "red", [ "v38.4", "h-153.6", "v0", "h-57.7" ] ],
+    [ "lcd1:GND", "uno:GND.1", "black", [ "v48", "h-9.6" ] ],
+    [ "lcd1:CS", "uno:10", "gold", [ "v38.4", "h19.2" ] ],
+    [ "lcd1:MOSI", "uno:11", "green", [ "v19.2", "h-19.21" ] ],
+    [ "lcd1:SCK", "uno:13", "green", [ "v9.6", "h-48.01" ] ],
+    [ "lcd1:MISO", "uno:12", "green", [ "v0" ] ],
+    [ "lcd1:D/C", "uno:9", "violet", [ "v38.4", "h9.6" ] ]
+  ],
+  "dependencies": {}
+}
