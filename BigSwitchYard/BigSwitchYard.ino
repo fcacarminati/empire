@@ -226,7 +226,6 @@ void preplut() {
 }
 
 double lutsin(double ang) {
-  ang *=raddeg;
   ang = fmod(ang,360.);
   ang = ang < 0 ? ang+360. : ang;
   double isign = 1.;
@@ -250,7 +249,7 @@ double lutsin(double ang) {
 }
 
 double lutcos(double ang) {
-  return lutsin((90.-ang*raddeg)*degrad);
+  return lutsin(90.-ang);
 }
 
 #define BLACK       0x0000  ///<   0,   0,   0
@@ -353,8 +352,11 @@ protected:
       y1 = yy1+0.5;
   }
 
-  inline void matset(double dangle, double x, double y) {
-    double angle = dangle * degrad;
+  inline void matset(double angle, double x, double y) {
+    /*
+    *  LUT tables are in degrees, so we use degrees
+    */
+    //double angle = angle * degrad;
     m_rotmat[0] = lutcos(angle);
     m_rotmat[1] = -lutsin(angle);
     m_rotmat[2] = x;
@@ -381,7 +383,7 @@ protected:
        for(uint16_t i=0; i<= nstep; ++i) {
         uint16_t xp = 0;
         uint16_t yp = 0;
-        double ang = (deg0+hnorm*i)*degrad;
+        double ang = (deg0+hnorm*i) /**degrad*/;
         double xp0 = (rad+j) * lutcos(ang);
         double yp0 = (rad+j) * lutsin(ang) + rsign*(rad+yshift);
         matrot(xp0,yp0,xp,yp);
@@ -427,7 +429,7 @@ public:
 * rot    -- rotation angle
 */
     int8_t end = m_nptrk/2;
-    int16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang*degrad)+0.5;
+    int16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
     uint16_t x0 = 0;
     uint16_t y0 = 0;
     uint16_t x1 = 0;
@@ -461,11 +463,15 @@ public:
         angle = m_rotation+0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
         if(jorder == 3) color=m_colon;
+        tft.startWrite();
+        tft.setAddrWindow(0,0,dw,dh);
         for(int8_t j=-end; j<=end; ++j) {
           matrot(-len,j,x0,y0);
           matrot( len,j,x1,y1);
-          tft.drawLine(x0,y0,x1,y1,color);  
+//          tft.drawLine(x0,y0,x1,y1,color);  
+          tft.writeLine(x0,y0,x1,y1,color);  
         }
+        tft.endWrite();
       }
       if(jorder++==3) break;
 
@@ -473,11 +479,15 @@ public:
         angle = m_rotation-0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
         if(jorder == 3) color=m_colon;
+        tft.startWrite();
+        tft.setAddrWindow(0,0,dw,dh);
         for(int8_t j=-end; j<=end; ++j) {
           matrot(-len,j,x0,y0);
           matrot( len,j,x1,y1);
-          tft.drawLine(x0,y0,x1,y1,color);  
+//          tft.drawLine(x0,y0,x1,y1,color);  
+          tft.writeLine(x0,y0,x1,y1,color);  
         }
+        tft.endWrite();
       }
       if(jorder++==3) break;
     }
@@ -523,6 +533,8 @@ public:
         int8_t end = m_nptrk/2;
         uint16_t len = m_len*m_scale+0.5;
         if(jorder == 2) color=m_colon;
+        tft.startWrite();
+        tft.setAddrWindow(0,0,dw,dh);
         for(int8_t j=-end; j<=end; ++j) {
           uint16_t x0 = 0;
           uint16_t y0 = 0;
@@ -530,8 +542,10 @@ public:
           uint16_t y1 = 0;
           matrot(0,j,x0,y0);
           matrot(len,j,x1,y1);
-          tft.drawLine(x0,y0,x1,y1,color);  
+//          tft.drawLine(x0,y0,x1,y1,color);  
+          tft.writeLine(x0,y0,x1,y1,color);  
        }
+       tft.endWrite();
       }
       if(jorder++ == 2) break;
    }
@@ -561,6 +575,8 @@ public:
     uint16_t color = state == 0 ? m_coloff : m_colon;
     int16_t len = m_len*m_scale+0.5;
     int8_t end = m_nptrk/2;
+    tft.startWrite();
+    tft.setAddrWindow(0,0,dw,dh);
     for(int8_t j=-end; j<=end; ++j) {
       uint16_t x0 = 0;
       uint16_t y0 = 0;
@@ -568,8 +584,10 @@ public:
       uint16_t y1 = 0;
       matrot(-0.5*len,j,x0,y0);
       matrot( 0.5*len,j,x1,y1);
-      tft.drawLine(x0,y0,x1,y1,color);  
+//      tft.drawLine(x0,y0,x1,y1,color);  
+      tft.writeLine(x0,y0,x1,y1,color);  
     }
+    tft.endWrite();
   }
 
 private:
@@ -647,7 +665,7 @@ void setup() {
     if(i%1000 == 0) Serial.println("Working");
     double ang = 1000*(1.-2.*rand()*hnorm);
     ang = 90.*rand()*hnorm;
-    double diff1 = cos(ang*degrad) - lutcos(ang*degrad);
+    double diff1 = cos(ang*degrad) - lutcos(ang/**degrad*/);
     sumdiff1 += diff1;
     sumdiff12 += diff1*diff1;
     if(fabs(diff1) > 5e-7) {
@@ -656,7 +674,7 @@ void setup() {
       Serial.print(", ");
       Serial.println(ang);
     }
-    double diff2 = sin(ang*degrad) - lutsin(ang*degrad);
+    double diff2 = sin(ang*degrad) - lutsin(ang/**degrad*/);
     sumdiff2 += diff2;
     sumdiff22 += diff2*diff2;
     if(fabs(diff2) > 5e-7) {
@@ -741,8 +759,8 @@ void setup() {
   yield();
 
   straight *str4 = new straight(56.);
-  str4->setPosition(0,dw/2,heig4);
-  str4->draw(0);
+  //str4->setPosition(0,dw/2,heig4);
+  //str4->draw(0);
   yield();
 
 
