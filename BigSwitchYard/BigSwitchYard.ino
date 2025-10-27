@@ -211,33 +211,33 @@ void loop()
 */
 
 #define TFT25257
+//#define ILI9341
 
+#include "Adafruit_GFX.h"
 #ifdef ILI9341
 #include "SPI.h"
-#include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #endif
 
 #ifdef TFT25257
-#include "Adafruit_GFX.h"
 #include "MCUFRIEND_kbv.h"
 #endif
 
-double lut[91];
-const double degrad = acos(-1.)/180.;
-const double raddeg = 1./degrad;
+float lut[91];
+const float degrad = acos(-1.)/180.;
+const float raddeg = 1./degrad;
 
 void preplut() {
   for(uint16_t i=0; i<91; ++i) {
-    double ang = i*degrad;
+    float ang = i*degrad;
     lut[i] = sin(ang);
   }
 }
 
-double lutsin(double ang) {
+float lutsin(float ang) {
   ang = fmod(ang,360.);
   ang = ang < 0 ? ang+360. : ang;
-  double isign = 1.;
+  float isign = 1.;
   if(ang > 270.) {
     ang = 360.-ang;
     isign =-1.;
@@ -250,14 +250,14 @@ double lutsin(double ang) {
   if(ang >= 90.) return isign;
   else if(ang <=0.) return 0;
   int iang = ang;
-  double frac = ang - iang;
-  double lin = (1.-frac)*lut[iang]+frac*lut[iang+1];
+  float frac = ang - iang;
+  float lin = (1.-frac)*lut[iang]+frac*lut[iang+1];
   if(iang==0) return isign*lin;
-  double curv = lut[iang-1] - 2.*lut[iang] + lut[iang+1];
+  float curv = lut[iang-1] - 2.*lut[iang] + lut[iang+1];
   return isign*(lin - 0.5*frac*(1.-frac)*curv);
 }
 
-double lutcos(double ang) {
+float lutcos(float ang) {
   return lutsin(90.-ang);
 }
 
@@ -299,7 +299,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 MCUFRIEND_kbv tft;
 #endif
 
-double scale = 0;
+float scale = 0;
 int dw = 0;
 int dh = 0;
 
@@ -323,7 +323,7 @@ public:
     m_side(side)
   {};
 
-  static void setScale(double scale) {
+  static void setScale(float scale) {
     m_scale=scale;
     m_npbed=3*scale+0.5;
     m_npbed += 1-m_npbed%2;
@@ -331,7 +331,7 @@ public:
     m_nptrk += 1-m_nptrk%2;
   }
 
-  void setPosition(double ang, double x, double y) {
+  void setPosition(float ang, float x, float y) {
     m_xpos = x;
     m_ypos = y;
     m_rotation = ang;
@@ -360,18 +360,18 @@ protected:
     *b = (B5 << 3) | (B5 >> 2);      // 5 -> 8
   }
   
-  inline void matrot(const double x0, const double y0, uint16_t &x1, uint16_t &y1) const {
-      double xx1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2];
-      double yy1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5];
+  inline void matrot(const float x0, const float y0, uint16_t &x1, uint16_t &y1) const {
+      float xx1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2];
+      float yy1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5];
       x1 = xx1+0.5;
       y1 = yy1+0.5;
   }
 
-  inline void matset(double angle, double x, double y) {
+  inline void matset(float angle, float x, float y) {
     /*
     *  LUT tables are in degrees, so we use degrees
     */
-    //double angle = angle * degrad;
+    //float angle = angle * degrad;
     m_rotmat[0] = lutcos(angle);
     m_rotmat[1] = -lutsin(angle);
     m_rotmat[2] = x;
@@ -380,15 +380,15 @@ protected:
     m_rotmat[5] = y;
   }
 
-  void drawArc(double rad, double ddeg0, double ddeg1, int16_t color, int16_t yshift=0) {
+  void drawArc(float rad, float ddeg0, float ddeg1, int16_t color, int16_t yshift=0) {
       
-    double deg0 = ddeg0<ddeg1 ? ddeg0 : ddeg1;
-    double deg1 = ddeg0<ddeg1 ? ddeg1 : ddeg0;
+    float deg0 = ddeg0<ddeg1 ? ddeg0 : ddeg1;
+    float deg1 = ddeg0<ddeg1 ? ddeg1 : ddeg0;
     /*
     * > 2 pix per step
     */
     int16_t npix = rad*degrad+0.5;
-    double hnorm = 1/(1.5*npix);
+    float hnorm = 1/(1.5*npix);
     uint16_t nstep = 1.5*npix*(deg1-deg0)+0.5;
     int8_t rsign = m_side == kright ? 1 : -1;
     int8_t end = m_nptrk/2;
@@ -398,39 +398,57 @@ protected:
        for(uint16_t i=0; i<= nstep; ++i) {
         uint16_t xp = 0;
         uint16_t yp = 0;
-        double ang = (deg0+hnorm*i) /**degrad*/;
-        double xp0 = (rad+j) * lutcos(ang);
-        double yp0 = (rad+j) * lutsin(ang) + rsign*(rad+yshift);
+        float ang = (deg0+hnorm*i) /**degrad*/;
+        float xp0 = (rad+j) * lutcos(ang);
+        float yp0 = (rad+j) * lutsin(ang) + rsign*(rad+yshift);
         matrot(xp0,yp0,xp,yp);
-//        tft.drawPixel(xp,yp,color);
         tft.writePixel(xp,yp,color);
       }
     }
     tft.endWrite();
   }
 
+  void drawLine(int16_t xx0, int16_t xx1, uint16_t color) {
+    int8_t end = m_nptrk/2;
+//    uint16_t len = m_len*m_scale+0.5;
+    tft.startWrite();
+    tft.setAddrWindow(0,0,dw,dh);
+    for(int8_t j=-end; j<=end; ++j) {
+      uint16_t x0 = 0;
+      uint16_t y0 = 0;
+      uint16_t x1 = 0;
+      uint16_t y1 = 0;
+      matrot(xx0,j,x0,y0);
+      matrot(xx1,j,x1,y1);
+//          tft.drawLine(x0,y0,x1,y1,color);  
+      tft.writeLine(x0,y0,x1,y1,color);  
+   }
+   tft.endWrite();
+  }
+
   static uint8_t m_npbed; // number of pixels for track bed
   static uint8_t m_nptrk; // number of pixels for track gauge
+  bool winset;            // first pass to set graphics window
   uint16_t m_coloff;      // color for inactive branch
   uint16_t m_colon;       // color cor active branch
   kside m_side;           // side of the turnout (right, left)
-  double m_xpos;          // x position for the track
-  double m_ypos;          // y position for the track
-  double m_rotation;      // rotation for the track
-  double m_rotmat[6];     // rotation matrix
+  float m_xpos;          // x position for the track
+  float m_ypos;          // y position for the track
+  float m_rotation;      // rotation for the track
+  float m_rotmat[6];     // rotation matrix
 
-  static double m_scale; // scale for drawing
+  static float m_scale; // scale for drawing
 };
 //================================= track ===================================
 
 uint8_t track::m_npbed=0;
 uint8_t track::m_nptrk=0;
-double  track::m_scale = 0;
+float  track::m_scale = 0;
 
 //================================= slip ====================================
 class slip: public track {
 public:
-   slip(double len, uint16_t ang, double rad): 
+   slip(float len, uint16_t ang, float rad): 
    track(),
    m_len(len),
    m_ang(ang),
@@ -445,13 +463,9 @@ public:
 */
     int8_t end = m_nptrk/2;
     int16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
-    uint16_t x0 = 0;
-    uint16_t y0 = 0;
-    uint16_t x1 = 0;
-    uint16_t y1 = 0;
     uint16_t irad = m_rad*m_scale+0.5;
     int16_t mshift = 0.33*m_npbed + 0.5;
-    double angle = 0;
+    float angle = 0;
 
    
     uint16_t color = m_coloff;
@@ -478,15 +492,7 @@ public:
         angle = m_rotation+0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
         if(jorder == 3) color=m_colon;
-        tft.startWrite();
-        tft.setAddrWindow(0,0,dw,dh);
-        for(int8_t j=-end; j<=end; ++j) {
-          matrot(-len,j,x0,y0);
-          matrot( len,j,x1,y1);
-//          tft.drawLine(x0,y0,x1,y1,color);  
-          tft.writeLine(x0,y0,x1,y1,color);  
-        }
-        tft.endWrite();
+        drawLine(-len,len,color);
       }
       if(jorder++==3) break;
 
@@ -494,15 +500,8 @@ public:
         angle = m_rotation-0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
         if(jorder == 3) color=m_colon;
-        tft.startWrite();
-        tft.setAddrWindow(0,0,dw,dh);
-        for(int8_t j=-end; j<=end; ++j) {
-          matrot(-len,j,x0,y0);
-          matrot( len,j,x1,y1);
-//          tft.drawLine(x0,y0,x1,y1,color);  
-          tft.writeLine(x0,y0,x1,y1,color);  
-        }
-        tft.endWrite();
+        drawLine(-len,len,color);
+       tft.endWrite();
       }
       if(jorder++==3) break;
     }
@@ -510,16 +509,16 @@ public:
   }
 
 private:
-  double m_len;    // length of the straight part of the switch
+  float m_len;    // length of the straight part of the switch
   uint16_t m_ang;  // angle of the curved part of the switch
-  double m_rad;    // radius of the curved part of the switch
+  float m_rad;    // radius of the curved part of the switch
 };
 //================================= slip ===================================
 
 //================================= turnout ================================
 class turnout: public track {
 public:
-  turnout(double len, uint16_t ang, double rad, kside side):
+  turnout(float len, uint16_t ang, float rad, kside side):
     track(side),
     m_len(len),
     m_ang(ang),
@@ -538,48 +537,37 @@ public:
     while(1) {
       if(jorder > 0) {
         uint16_t irad = m_rad*m_scale+0.5;
-        double ang1 = m_side == kleft ? 90-m_ang : 270;
+        float ang1 = m_side == kleft ? 90-m_ang : 270;
         if(jorder == 2) color=m_colon;
         drawArc(irad,ang1,ang1+m_ang,color);
       }
       if(jorder++ == 2) break;
 
       if(jorder > 0) {
-        int8_t end = m_nptrk/2;
         uint16_t len = m_len*m_scale+0.5;
         if(jorder == 2) color=m_colon;
-        tft.startWrite();
-        tft.setAddrWindow(0,0,dw,dh);
-        for(int8_t j=-end; j<=end; ++j) {
-          uint16_t x0 = 0;
-          uint16_t y0 = 0;
-          uint16_t x1 = 0;
-          uint16_t y1 = 0;
-          matrot(0,j,x0,y0);
-          matrot(len,j,x1,y1);
-//          tft.drawLine(x0,y0,x1,y1,color);  
-          tft.writeLine(x0,y0,x1,y1,color);  
-       }
-       tft.endWrite();
+        drawLine(0,len,color);
       }
       if(jorder++ == 2) break;
    }
  }
 
 private:
-  double m_len;    // length of the straight part of the switch
+  float m_len;    // length of the straight part of the switch
   uint16_t m_ang;  // angle of the curved part of the switch
-  double m_rad;    // radius of the curved part of the switch
+  float m_rad;    // radius of the curved part of the switch
 };
 //================================= turnout ================================
 
 //================================= straight ===============================
 class straight: public track {
 public:
-  straight(double len):
+  straight(float len):
     track(),
     m_len(len)
     {};
+
+  const float getLen() {return m_len;}
 
   void draw(uint16_t state) override {
 /*
@@ -588,64 +576,41 @@ public:
 * rot    -- rotation angle
 */
     uint16_t color = state == 0 ? m_coloff : m_colon;
-    int16_t len = m_len*m_scale+0.5;
-    int8_t end = m_nptrk/2;
-    tft.startWrite();
-    tft.setAddrWindow(0,0,dw,dh);
-    for(int8_t j=-end; j<=end; ++j) {
-      uint16_t x0 = 0;
-      uint16_t y0 = 0;
-      uint16_t x1 = 0;
-      uint16_t y1 = 0;
-      matrot(-0.5*len,j,x0,y0);
-      matrot( 0.5*len,j,x1,y1);
-//      tft.drawLine(x0,y0,x1,y1,color);  
-      tft.writeLine(x0,y0,x1,y1,color);  
-    }
-    tft.endWrite();
+    int16_t xlen = 0.5*m_len*scale+0.5; 
+    drawLine(-xlen,xlen,color);
   }
 
 private:
-  double m_len;    // length of the straight part of the switch
+  float m_len;    // length of the straight part of the switch
 };
 //================================= straight ===============================
 
 //================================= trackset ===============================
 class trackset {
+#define MAXTRACK 10
 public:
   trackset():
-  m_cont(0X0)
+  m_ntrack(0)
   {} 
 
   track* addTrack(track *newt) {
-    trackcont **next = &m_cont;
-    while(*next) {
-      next = &((*next)->m_next);
+    if(m_ntrack == MAXTRACK-1) {
+      Serial.println(F("addTrack cannot add another track"));
+      return nullptr;
+    } else {
+      m_cont[m_ntrack] = newt;
+      return m_cont[m_ntrack++];
     }
-    *next = new trackcont(newt);
-    return newt;
   }
 
-void draw(uint16_t state) {
-    trackcont *next = m_cont;
-    while(next) {
-      next->m_t->draw(state);
-      next = next->m_next;
-    }
+  void draw(uint16_t state) {
+    for(uint8_t i = 0; i<m_ntrack; ++i) 
+       m_cont[i]->draw(state);
   }
 
 private:
-  class trackcont {
-  public: 
-    trackcont(track *t):
-    m_t(t),
-    m_next(0X0)
-    {}
-
-    track     *m_t;
-    trackcont *m_next;
-  };
-  trackcont *m_cont;
+  track     *m_cont[MAXTRACK];
+  uint8_t   m_ntrack;
 };
 //================================= trackset ===============================
 
@@ -686,140 +651,136 @@ slip slip1(23,15,105);
 slip slip2(23,15,105);
 slip slip3(23,15,105);
 slip slip4(23,15,105);
+straight tr1(5.);
+straight tr2(5.);
+straight tr3(4.);
+straight tr4(22.);
+straight tr5(22.);
+straight tr6(4.);
+straight tr7(22.);
+straight tr8(22.);
+straight str3(56.);
+straight str4(56.);
+trackset ts1;
+trackset ts2;
+trackset ts3;
 
 // 6 Aand 8.6
 void setup() {
   Serial.begin(9600);
-  Serial.println("ILI9341 Test!"); 
+  uint16_t begarg = 0;
+  Serial.println(F("ILI9341 Test!")); 
+#ifdef TFT25257
+   begarg = tft.readID();
+#endif
  
-  tft.begin();
+  Serial.println(begarg);
+  tft.begin(begarg);
   tft.setRotation(1);
   tft.fillScreen(BLACK);
   yield();
 
   preplut();
-  double hnorm = 1./RAND_MAX;
+#ifdef NEVER
+  float hnorm = 1./RAND_MAX;
   uint32_t nrep = 10;
-  double hnorm1 = 1./nrep;
-  double sumdiff1 = 0;
-  double sumdiff2 = 0;
-  double sumdiff12 = 0;
-  double sumdiff22 = 0;
+  float hnorm1 = 1./nrep;
+  float sumdiff1 = 0;
+  float sumdiff2 = 0;
+  float sumdiff12 = 0;
+  float sumdiff22 = 0;
   for(uint32_t i=0; i<nrep; ++i) {
     if(i%1000 == 0) Serial.println("Working");
-    double ang = 1000*(1.-2.*rand()*hnorm);
-    ang = 90.*rand()*hnorm;
-    double diff1 = cos(ang*degrad) - lutcos(ang/**degrad*/);
+    float ang = 1000*(1.-2.*rand()*hnorm);
+//    ang = 90.*rand()*hnorm;
+    float diff1 = cos(ang*degrad) - lutcos(ang/**degrad*/);
     sumdiff1 += diff1;
     sumdiff12 += diff1*diff1;
     if(fabs(diff1) > 5e-7) {
-      Serial.print("cos diff ");
+      Serial.print(F("cos diff "));
       Serial.print(diff1,7);
-      Serial.print(", ");
+      Serial.print(F(", "));
       Serial.println(ang);
     }
-    double diff2 = sin(ang*degrad) - lutsin(ang/**degrad*/);
+    float diff2 = sin(ang*degrad) - lutsin(ang/**degrad*/);
     sumdiff2 += diff2;
     sumdiff22 += diff2*diff2;
     if(fabs(diff2) > 5e-7) {
-      Serial.print("sin diff ");
+      Serial.print(F("sin diff "));
       Serial.print(diff2,7);
-      Serial.print(", ");
+      Serial.print(F(", "));
       Serial.println(ang);
     }
   }
-  Serial.print("Average error cos ");Serial.print(sumdiff1*hnorm1,7);
-  Serial.print(" +- ");Serial.println(sqrt(sumdiff12*hnorm1 - sumdiff1*hnorm1*sumdiff1*hnorm1));
-  Serial.print("              sin ");Serial.print(sumdiff2*hnorm1,7);
-  Serial.print(" +- ");Serial.println(sqrt(sumdiff22*hnorm1 - sumdiff2*hnorm1*sumdiff2*hnorm1));
-  
+  Serial.print(F("Average error cos "));Serial.print(sumdiff1*hnorm1,7);
+  Serial.print(F(" +- "));Serial.println(sqrt(sumdiff12*hnorm1 - sumdiff1*hnorm1*sumdiff1*hnorm1));
+  Serial.print(F("              sin "));Serial.print(sumdiff2*hnorm1,7);
+  Serial.print(F(" +- "));Serial.println(sqrt(sumdiff22*hnorm1 - sumdiff2*hnorm1*sumdiff2*hnorm1));
+ #endif
 
   // read diagnostics (optional but can help debug problems)
  #ifdef ILI9341
  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
-  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
+  Serial.print(F("Display Power Mode: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDMADCTL);
-  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
+  Serial.print(F("MADCTL Mode: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDPIXFMT);
-  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
+  Serial.print(F("Pixel Format: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDIMGFMT);
-  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
+  Serial.print(F("Image Format: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
-  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
+  Serial.print(F("Self Diagnostic: 0x")); Serial.println(x, HEX); 
   #endif
-  Serial.print("TFT width:  "); Serial.println(dw=tft.width());
-  Serial.print("TFT height: "); Serial.println(dh=tft.height());
+  Serial.print(F("TFT width:  ")); Serial.println(dw=tft.width());
+  Serial.print(F("TFT height: ")); Serial.println(dh=tft.height());
 
 /*
 * Define scale as pixels per cm
 */  
-
+  Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
+ 
   scale = dw/102.;
   track::setScale(scale);
-  double dist1 = 6;
-  double dist2 = 8.6;
+  float dist1 = 6;
+  float dist2 = 8.6;
   uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5;
   uint16_t heig2 = heig1+dist1*scale+0.5;
   uint16_t heig3 = heig2+dist2*scale+0.5;
   uint16_t heig4 = heig3+dist1*scale+0.5;
 
-  track *tr = nullptr;
-
-  trackset ts1;
-  straight tr1(5.);
-  ts1.addTrack(&tr1)->setPosition(15,dw/2,dh/2);
-  
-  straight tr2(5.);
+  ts1.addTrack(&tr1)->setPosition( 15,dw/2,dh/2);
   ts1.addTrack(&tr2)->setPosition(-15,dw/2,dh/2);;
- 
   ts1.draw(0);
 
-  trackset ts2;
-  straight tr3(4.);
   ts2.addTrack(&tr3)->setPosition(0,dw/2,heig2);
-
-  straight tr4(22.);
-  ts2.addTrack(&tr4)->setPosition(0,22*scale/2,heig2);
-
-  straight tr5(22.);
-  ts2.addTrack(&tr5)->setPosition(0,dw-22*scale/2,heig2);
-
+  float hl = 0.5*tr4.getLen()*scale;
+  ts2.addTrack(&tr4)->setPosition(0,hl,heig2);
+  hl = 0.5*tr7.getLen()*scale;
+  ts2.addTrack(&tr5)->setPosition(0,dw-hl,heig2);
   ts2.draw(0);
 
-  trackset ts3;
-  straight tr6(4.);
   ts3.addTrack(&tr6)->setPosition(0,dw/2,heig3);
-
-  straight tr7(22.);
-  ts3.addTrack(&tr7)->setPosition(0,22*scale/2,heig3);
-
-  straight tr8(22.);
-  ts3.addTrack(&tr8)->setPosition(0,dw-22*scale/2,heig3);
-
+  hl = 0.5*tr7.getLen()*scale;
+  ts3.addTrack(&tr7)->setPosition(0,hl,heig3);
+  hl = 0.5*tr7.getLen()*scale;
+  ts3.addTrack(&tr8)->setPosition(0,dw-hl,heig3);
   ts3.draw(0);
 
-
-  straight str3(56.);
   str3.setPosition(0,dw/2,heig1);
   str3.draw(0);
+
+  str4.setPosition(0,dw/2,heig4); 
+  str4.draw(0);
+
+  Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   yield();
-
-Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
-{ straight str4(56.); /*str4.setPosition(0,dw/2,heig4); /*str4.draw(0);*/ }
-Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
-  //str4->setPosition(0,dw/2,heig4);
-  //str4->draw(0);
-  yield();
-
-
-
   
   turn1.setPosition(0,0,heig1);
   turn2.setPosition(180,dw,heig1);
   turn3.setPosition(180,dw,heig4);
   turn4.setPosition(0,0,heig4);
 
-  //double slip (L= 230mm 15° R=1050mm)
+  //float slip (L= 230mm 15° R=1050mm)
 
   int16_t xshift = 35.2*scale+0.5;
   slip1.setPosition(7.5,xshift,heig2);
@@ -830,34 +791,62 @@ Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   tft.setTextSize(2);
   uint16_t state=0;
   for(uint16_t i=0; i<4096; ++i) {
-    tft.fillRect(10,50,dw-50,20,BLACK);
-    tft.setCursor(10,50);
+    tft.fillRect(0,0,dw,heig1-2,BLACK);
+    tft.fillRect(0,heig4+2,dw,dh,BLACK);
+    tft.setCursor(10,20);
     tft.print(F("Route "));
     char buf[6];                        // enough for "0xFFFF\0"
     sprintf(buf, "%04X", i);        // 4 hex digits, uppercase, zero-padded
     tft.print(buf);
 //    tft.print(i,HEX);
-
+// T1 | T2 | T3 | T4 | S1 | S2 | S3 | S4
+//  1    1    1    1    2    2    2    2
+// 11   10    9    8   7-6 5-4  3-2  1-0
+//800  400  200  100    C0  30    C    3
+//
     state = i>>11 & 1;
     turn1.draw(state);
+    tft.setCursor(20,heig1-30);
+    tft.print(state);
+
     state = i>>10 & 1;
-    turn2.draw(state);
+    turn2.draw(2);
+    tft.setCursor(dw-40,heig1-30);
+    tft.print(state);
+
     state = i>>9 & 1;
     turn3.draw(state);
+    tft.setCursor(dw-40,heig4+30);
+    tft.print(state);
+
     state = i>>8 & 1;
     turn4.draw(state);
+    tft.setCursor(30,heig4+30);
+    tft.print(state);
+
     state = i>>6 & 3;
     slip1.draw(state);
+    tft.setCursor(110,heig1-30);
+    tft.print(state);
+
     state = i>>4 & 3;
     slip2.draw(state);
+    tft.setCursor(110,heig4+30);
+    tft.print(state);
+
     state = i>>2 & 3;
     slip3.draw(state);
+    tft.setCursor(dw-120,heig1-30);
+    tft.print(state);
+
     state = i & 3;
     slip4.draw(state);
+    tft.setCursor(dw-120,heig4+30);
+    tft.print(state);
+
+    tft.setCursor(150,20);
     tft.print(F("... done"));
     delay(1000);
-//    tft.setCursor(10,50);
-//    tft.print("           ");
   }
 
   yield();
@@ -912,7 +901,7 @@ Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   Serial.print(F("Rounded rects (filled)   "));
   Serial.println(testFilledRoundRects());
   delay(500);
-
+ 
   Serial.println(F("Done!"));
 #endif
 
