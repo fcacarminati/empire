@@ -210,9 +210,18 @@ void loop()
 * Simulated with an ILI9341, will switch to ILI9486
 */
 
+#define TFT25257
+
+#ifdef ILI9341
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
+#endif
+
+#ifdef TFT25257
+#include "Adafruit_GFX.h"
+#include "MCUFRIEND_kbv.h"
+#endif
 
 double lut[91];
 const double degrad = acos(-1.)/180.;
@@ -272,6 +281,7 @@ double lutcos(double ang) {
 #define GREENYELLOW 0xAFE5  ///< 173, 255,  41
 #define PINK        0xFC18  ///< 255, 130, 198
 
+#ifdef ILI9341
 // For the Adafruit shield, these are the default.
 #define TFT_CLK 13
 #define TFT_MISO 12
@@ -283,6 +293,11 @@ double lutcos(double ang) {
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // If using the breakout, change pins as desired
 //Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
+#endif
+
+#ifdef TFT25257
+MCUFRIEND_kbv tft;
+#endif
 
 double scale = 0;
 int dw = 0;
@@ -505,11 +520,11 @@ private:
 class turnout: public track {
 public:
   turnout(double len, uint16_t ang, double rad, kside side):
-    track(),
+    track(side),
     m_len(len),
     m_ang(ang),
     m_rad(rad)
-    {m_side=side;};
+    {};
 
   void draw(uint16_t state) {
 /*
@@ -634,6 +649,35 @@ private:
 };
 //================================= trackset ===============================
 
+size_t freeHeap() {
+  #if defined(ESP32)
+    return ESP.getFreeHeap();
+
+  #elif defined(ESP8266)
+    return ESP.getFreeHeap();
+
+  #elif defined(__AVR__)
+    extern char __heap_start;
+    extern void* __brkval;
+    char top;
+    return (size_t) (&top - (char*)(__brkval ? __brkval : &__heap_start));
+
+  #elif defined(ARDUINO_ARCH_RP2040)
+    // Earle Philhower core
+    return rp2040.getFreeHeap();
+
+  #elif defined(TEENSYDUINO) || defined(ARDUINO_ARCH_SAMD) || \
+        defined(ARDUINO_ARCH_MEGAAVR) || defined(ARDUINO_ARCH_RENESAS)
+    // Uses newlib; mallinfo() is available
+    #include <malloc.h>
+    struct mallinfo mi = mallinfo();
+    return (size_t)mi.fordblks;   // free bytes in the heap
+
+  #else
+    return 0; // unknown target
+  #endif
+}
+
 turnout turn1(23,15,87.35,kright);
 turnout turn2(23,15,87.35,kleft);
 turnout turn3(23,15,87.35,kright);
@@ -650,7 +694,7 @@ void setup() {
  
   tft.begin();
   tft.setRotation(1);
-  //tft.fillScreen(WHITE);
+  tft.fillScreen(BLACK);
   yield();
 
   preplut();
@@ -691,7 +735,8 @@ void setup() {
   
 
   // read diagnostics (optional but can help debug problems)
-  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
+ #ifdef ILI9341
+ uint8_t x = tft.readcommand8(ILI9341_RDMODE);
   Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDMADCTL);
   Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
@@ -701,6 +746,7 @@ void setup() {
   Serial.print("Image Format: 0x"); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
+  #endif
   Serial.print("TFT width:  "); Serial.println(dw=tft.width());
   Serial.print("TFT height: "); Serial.println(dh=tft.height());
 
@@ -720,65 +766,60 @@ void setup() {
   track *tr = nullptr;
 
   trackset ts1;
-  tr = new straight(5.);
-  ts1.addTrack(tr)->setPosition(15,dw/2,dh/2);
+  straight tr1(5.);
+  ts1.addTrack(&tr1)->setPosition(15,dw/2,dh/2);
   
-  tr = new straight(5.);
-  ts1.addTrack(tr)->setPosition(-15,dw/2,dh/2);;
+  straight tr2(5.);
+  ts1.addTrack(&tr2)->setPosition(-15,dw/2,dh/2);;
  
   ts1.draw(0);
 
   trackset ts2;
-  tr = new straight(4.);
-  ts2.addTrack(tr)->setPosition(0,dw/2,heig2);
+  straight tr3(4.);
+  ts2.addTrack(&tr3)->setPosition(0,dw/2,heig2);
 
-  tr = new straight(22.);
-  ts2.addTrack(tr)->setPosition(0,22*scale/2,heig2);
+  straight tr4(22.);
+  ts2.addTrack(&tr4)->setPosition(0,22*scale/2,heig2);
 
-  tr = new straight(22.);
-  ts2.addTrack(tr)->setPosition(0,dw-22*scale/2,heig2);
+  straight tr5(22.);
+  ts2.addTrack(&tr5)->setPosition(0,dw-22*scale/2,heig2);
 
   ts2.draw(0);
 
   trackset ts3;
-  tr = new straight(4.);
-  ts3.addTrack(tr)->setPosition(0,dw/2,heig3);
+  straight tr6(4.);
+  ts3.addTrack(&tr6)->setPosition(0,dw/2,heig3);
 
-  tr = new straight(22.);
-  ts3.addTrack(tr)->setPosition(0,22*scale/2,heig3);
+  straight tr7(22.);
+  ts3.addTrack(&tr7)->setPosition(0,22*scale/2,heig3);
 
-  tr = new straight(22.);
-  ts3.addTrack(tr)->setPosition(0,dw-22*scale/2,heig3);
+  straight tr8(22.);
+  ts3.addTrack(&tr8)->setPosition(0,dw-22*scale/2,heig3);
 
   ts3.draw(0);
 
 
-  straight *str3 = new straight(56.);
-  str3->setPosition(0,dw/2,heig1);
-  str3->draw(0);
+  straight str3(56.);
+  str3.setPosition(0,dw/2,heig1);
+  str3.draw(0);
   yield();
 
-  straight *str4 = new straight(56.);
+Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
+{ straight str4(56.); /*str4.setPosition(0,dw/2,heig4); /*str4.draw(0);*/ }
+Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   //str4->setPosition(0,dw/2,heig4);
   //str4->draw(0);
   yield();
 
 
-  uint8_t state=0;
+
   
   turn1.setPosition(0,0,heig1);
   turn2.setPosition(180,dw,heig1);
   turn3.setPosition(180,dw,heig4);
   turn4.setPosition(0,0,heig4);
-  for(int i=0; i<2; ++i) {
-    state = i;
-    turn1.draw(state);
-    turn2.draw(state);
-    turn3.draw(state);
-    turn4.draw(state);
-  }
 
-  //Double slip (L= 230mm 15° R=1050mm)
+  //double slip (L= 230mm 15° R=1050mm)
 
   int16_t xshift = 35.2*scale+0.5;
   slip1.setPosition(7.5,xshift,heig2);
@@ -786,13 +827,37 @@ void setup() {
   slip3.setPosition(-7.5,dw-xshift,heig2);
   slip4.setPosition(7.5,dw-xshift,heig3);
   
+  tft.setTextSize(2);
+  uint16_t state=0;
+  for(uint16_t i=0; i<4096; ++i) {
+    tft.fillRect(10,50,dw-50,20,BLACK);
+    tft.setCursor(10,50);
+    tft.print(F("Route "));
+    char buf[6];                        // enough for "0xFFFF\0"
+    sprintf(buf, "%04X", i);        // 4 hex digits, uppercase, zero-padded
+    tft.print(buf);
+//    tft.print(i,HEX);
 
-  for(int i=0; i<4; ++i) {
-    state = i;
+    state = i>>11 & 1;
+    turn1.draw(state);
+    state = i>>10 & 1;
+    turn2.draw(state);
+    state = i>>9 & 1;
+    turn3.draw(state);
+    state = i>>8 & 1;
+    turn4.draw(state);
+    state = i>>6 & 3;
     slip1.draw(state);
+    state = i>>4 & 3;
     slip2.draw(state);
+    state = i>>2 & 3;
     slip3.draw(state);
+    state = i & 3;
     slip4.draw(state);
+    tft.print(F("... done"));
+    delay(1000);
+//    tft.setCursor(10,50);
+//    tft.print("           ");
   }
 
   yield();
