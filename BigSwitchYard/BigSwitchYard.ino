@@ -210,8 +210,8 @@ void loop()
 * Simulated with an ILI9341, will switch to ILI9486
 */
 
-#define TFT25257
-//#define ILI9341
+//#define TFT25257
+#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -428,7 +428,6 @@ protected:
 
   static uint8_t m_npbed; // number of pixels for track bed
   static uint8_t m_nptrk; // number of pixels for track gauge
-  bool winset;            // first pass to set graphics window
   uint16_t m_coloff;      // color for inactive branch
   uint16_t m_colon;       // color cor active branch
   kside m_side;           // side of the turnout (right, left)
@@ -461,7 +460,6 @@ public:
 * y      -- position of the start of the switch
 * rot    -- rotation angle
 */
-    int8_t end = m_nptrk/2;
     int16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
     uint16_t irad = m_rad*m_scale+0.5;
     int16_t mshift = 0.33*m_npbed + 0.5;
@@ -634,10 +632,11 @@ size_t freeHeap() {
   #elif defined(TEENSYDUINO) || defined(ARDUINO_ARCH_SAMD) || \
         defined(ARDUINO_ARCH_MEGAAVR) || defined(ARDUINO_ARCH_RENESAS)
     // Uses newlib; mallinfo() is available
+#ifdef NEVER
     #include <malloc.h>
     struct mallinfo mi = mallinfo();
     return (size_t)mi.fordblks;   // free bytes in the heap
-
+#endif
   #else
     return 0; // unknown target
   #endif
@@ -677,7 +676,20 @@ void setup() {
   Serial.println(begarg);
   tft.begin(begarg);
   tft.setRotation(1);
-  tft.fillScreen(BLACK);
+  
+  uint8_t palette = 2;
+
+  uint16_t coltext;
+  uint16_t colback;
+  
+  if(palette == 1) {
+    coltext = WHITE;
+    colback = BLACK;
+  } else {
+    coltext = BLACK;
+    colback = WHITE;
+  }
+  tft.fillScreen(colback);
   yield();
 
   preplut();
@@ -741,7 +753,7 @@ void setup() {
  
   scale = dw/102.;
   track::setScale(scale);
-  float dist1 = 6;
+  float dist1 = 6.4;
   float dist2 = 8.6;
   uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5;
   uint16_t heig2 = heig1+dist1*scale+0.5;
@@ -782,75 +794,222 @@ void setup() {
 
   //float slip (L= 230mm 15° R=1050mm)
 
-  int16_t xshift = 35.2*scale+0.5;
+  int16_t xshift = 35.*scale+0.5;
   slip1.setPosition(7.5,xshift,heig2);
   slip2.setPosition(-7.5,xshift,heig3);
   slip3.setPosition(-7.5,dw-xshift,heig2);
   slip4.setPosition(7.5,dw-xshift,heig3);
   
   tft.setTextSize(2);
-  uint16_t state=0;
-  for(uint16_t i=0; i<4096; ++i) {
-    tft.fillRect(0,0,dw,heig1-2,BLACK);
-    tft.fillRect(0,heig4+2,dw,dh,BLACK);
-    tft.setCursor(10,20);
-    tft.print(F("Route "));
-    char buf[6];                        // enough for "0xFFFF\0"
-    sprintf(buf, "%04X", i);        // 4 hex digits, uppercase, zero-padded
-    tft.print(buf);
+  uint8_t ostate[8];
+  for(uint8_t i=0; i<8; ++i)
+    ostate[i] = 0XF;
+
+  // For classic font (setFont(NULL)) with scaling:
+  int16_t x1;
+  int16_t y1; 
+  uint16_t tw;
+  uint16_t th;
+  tft.setFont(NULL);
+  tft.setTextSize(2);              // example
+  tft.getTextBounds("A", 0, 0, &x1, &y1, &tw, &th); // bounding box of 'A'
+  Serial.print(F("Text width "));Serial.println(tw);
+
+  uint16_t istart = 0X0FBB + 1;
+  istart = 0;
+
+  uint8_t nvalid = 0;
+  for(uint16_t i=istart; i<4096; ++i) {
 //    tft.print(i,HEX);
 // T1 | T2 | T3 | T4 | S1 | S2 | S3 | S4
 //  1    1    1    1    2    2    2    2
 // 11   10    9    8   7-6 5-4  3-2  1-0
 //800  400  200  100    C0  30    C    3
 //
-    state = i>>11 & 1;
-    turn1.draw(state);
-    tft.setCursor(20,heig1-30);
-    tft.print(state);
+    const int8_t xshift = -5;
+    const int8_t yshift = -4;
 
-    state = i>>10 & 1;
-    turn2.draw(2);
-    tft.setCursor(dw-40,heig1-30);
-    tft.print(state);
+    uint8_t state1 = i>>11 & 1;
+    uint8_t state2 = i>>10 & 1;
+    uint8_t state3 = i>>9 & 1;
+    uint8_t state4 = i>>8 & 1;
+    uint8_t state5 = i>>6 & 3;
+    uint8_t state6 = i>>4 & 3;
+    uint8_t state7 = i>>2 & 3;
+    uint8_t state8 = i & 3;
 
-    state = i>>9 & 1;
-    turn3.draw(state);
-    tft.setCursor(dw-40,heig4+30);
-    tft.print(state);
+    uint16_t xpos = 0;
+    uint16_t ypos = 0;
+  
+    bool skip = false;
 
-    state = i>>8 & 1;
-    turn4.draw(state);
-    tft.setCursor(30,heig4+30);
-    tft.print(state);
+    uint16_t ctext = coltext;
 
-    state = i>>6 & 3;
-    slip1.draw(state);
-    tft.setCursor(110,heig1-30);
-    tft.print(state);
+    if((state1 == 0 && state5 == 0) || (state8 == 0 && state3 == 0) || (state8 == 2 && state5 == 1) || 
+       (state8 == 3 && state3 == 0) || (state7 == 1 && state6 == 0) || (state7 == 2 && state2 == 0) || 
+       (state7 == 3 && state6 == 0) || (state7 == 0 && state6 == 1) || (state7 == 1 && state2 == 0) || 
+       (state4 == 0 && state6 == 1) || (state4 == 0 && state6 == 3) || (state7 == 0 && state6 == 2) ||
+       (state1 == 0 && state5 == 2) || (state8 == 1 && state5 == 3) || (state4 == 1 && state6 == 0) || 
+       (state8 == 1 && state3 == 1) || (state7 == 3 && state6 == 3) || (state6 == 3 && state8 == 2) || 
+       (state4 == 1 && state6 == 2) || (state5 == 1 && state8 == 0) || /*(state6 == 0 && state8 == 3) || */
+       (state8 == 2 && state3 == 1) || /*(state6 == 0 && state8 == 0) || */(state6 == 3 && state8 == 0) || 
+       (state5 == 3 && state8 == 3) || (state2 == 1 && state7 == 0) || (state6 == 2 && state7 == 2) || 
+       (state7 == 2 && state5 == 3) || (state7 == 3 && state2 == 1) || (state6 == 1 && state7 == 2) ||
+       (state7 == 1 && state6 == 3) || (state5 == 0 && state8 == 1) || (state1 == 1 && state5 == 1) || 
+       (state5 == 2 && state8 == 2) || (state5 == 2 && state7 == 3) || (state1 == 1 && state5 == 3) || 
+       (state8 == 3 && state5 == 0) || (state5 == 0 && state7 == 2) || (state5 == 2 && state7 == 1) ||
+       (state6 == 2 && state8 == 3) || (state5 == 2 && state8 == 0)
+      ) {
+        skip = true;
+        ctext = RED;
+        if(skip) continue;
+       }
+ 
+    nvalid++;
+    tft.fillRect(0,0,dw,0.167*dh+0.5,colback);
+    tft.setCursor(dw/2-9*tw,0.083*dh+0.5);
+    tft.setTextColor(ctext);
+    tft.print(F("Route 0X"));
+    char buf[6];                        // enough for "0xFFF\0"
+    sprintf(buf, "%03X", i);        // 3 hex digits, uppercase, zero-padded
+    tft.print(buf);
+    if(skip) {
+      yield();
+      continue;
+    }
+    tft.setTextColor(coltext);
 
-    state = i>>4 & 3;
-    slip2.draw(state);
-    tft.setCursor(110,heig4+30);
-    tft.print(state);
+    if(state1 != ostate[0]) {
+      turn1.draw(state1);
+      xpos = 0.12*dw+0.5;
+      ypos = heig1-0.125*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("1-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state1);
+      ostate[0] = state1;
+    }
 
-    state = i>>2 & 3;
-    slip3.draw(state);
-    tft.setCursor(dw-120,heig1-30);
-    tft.print(state);
+    if(state2 != ostate[1]) {
+      turn2.draw(state2);
+      xpos = 0.92*dw+0.5;
+      ypos = heig1-0.125*dh;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("2-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state2);
+      ostate[1] = state2;
+    }
 
-    state = i & 3;
-    slip4.draw(state);
-    tft.setCursor(dw-120,heig4+30);
-    tft.print(state);
+    if(state3 != ostate[2]) {
+      turn3.draw(state3);
+      xpos = 0.92*dw+0.5;
+      ypos = heig4+0.08*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("3-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state3);
+      ostate[2] = state3;
+    }
 
-    tft.setCursor(150,20);
-    tft.print(F("... done"));
+    if(state4 != ostate[3]) {
+      turn4.draw(state4);
+      xpos = 0.12*dw+0.5;
+      ypos = heig4+0.08*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("4-"));
+       tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state4);
+      ostate[3] = state4;
+    }
+
+    if(state5 != ostate[4]) {
+      slip1.draw(state5);
+      xpos = 0.36*dw+0.5;
+      ypos = heig1-0.125*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("5-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state5);
+      ostate[4] = state5;
+    }
+
+    if(state6 != ostate[5]) {
+      slip2.draw(state6);
+      xpos = 0.36*dw+0.5;
+      ypos = heig4+0.08*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("6-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state6);
+      ostate[5] = state6;
+    }
+
+    if(state7 != ostate[6]) {
+      slip3.draw(state7);
+      xpos = dw*(1-0.373)+0.5;
+      ypos = heig1-0.125*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("7-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state7);
+      ostate[6] = state7;
+    }
+
+    if(ostate[7] != state8) {
+      slip4.draw(state8);
+      xpos = dw*(1-0.373)+0.5;
+      ypos = heig4+0.08*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(F("8-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state8);
+      ostate[7] = state8;
+    }
+  
+    tft.setTextColor(coltext);
+    tft.setCursor(dw/2+2*tw,0.083*dh+0.5);
+    tft.print(F("...done"));
     delay(1000);
+   // for(;;);
   }
 
   yield();
   
+  Serial.print("Numnber of valid configurations ");Serial.println(nvalid);
+
 //#define TEST
 #ifdef TEST
   Serial.println(F("Benchmark                Time (microseconds)"));
