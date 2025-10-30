@@ -261,6 +261,25 @@ float lutcos(float ang) {
   return lutsin(90.-ang);
 }
 
+inline uint16_t rgb888_to_rgb565_round(uint8_t r, uint8_t g, uint8_t b) {
+  uint16_t R5 = (r * 31 + 127) / 255;  // ≈ round(r/255*31)
+  uint16_t G6 = (g * 63 + 127) / 255;  // ≈ round(g/255*63)
+  uint16_t B5 = (b * 31 + 127) / 255;
+  return (R5 << 11) | (G6 << 5) | B5;
+}
+
+inline void rgb565_to_rgb888(uint16_t c,
+                                    uint8_t *r, uint8_t *g, uint8_t *b)
+{
+  uint8_t R5 = (c >> 11) & 0x1F;   // 5 bits
+  uint8_t G6 = (c >> 5)  & 0x3F;   // 6 bits
+  uint8_t B5 =  c        & 0x1F;   // 5 bits
+// Bit replication to fill 8 bits (keeps brightness scale reasonable)
+  *r = (R5 << 3) | (R5 >> 2);      // 5 -> 8
+  *g = (G6 << 2) | (G6 >> 4);      // 6 -> 8
+  *b = (B5 << 3) | (B5 >> 2);      // 5 -> 8
+}
+
 #define BLACK       0x0000  ///<   0,   0,   0
 #define NAVY        0x000F  ///<   0,   0, 123
 #define DARKGREEN   0x03E0  ///<   0, 125,   0
@@ -302,6 +321,10 @@ MCUFRIEND_kbv tft;
 float scale = 0;
 int dw = 0;
 int dh = 0;
+uint16_t xwmin = 0;
+uint16_t ywmin = 0;
+uint16_t xwlen = 0;
+uint16_t xwhig = 0;
 
 enum kside {kright,kleft};
 
@@ -311,6 +334,11 @@ public:
   track(uint16_t coloff,uint16_t colon,kside side=kleft):
     m_coloff(coloff),
     m_colon(colon),
+/*    m_xwin(0),
+    m_ywin(0), 
+    m_wlen(dw),
+    m_whig(dh),
+    m_fdraw(true), */ 
     m_side(side),
     m_xpos(0),
     m_ypos(0),
@@ -339,27 +367,7 @@ public:
   }
 
   virtual void draw(uint16_t ) {}
-protected:  
-  inline uint16_t rgb888_to_rgb565_round(uint8_t r, uint8_t g, uint8_t b) {
-    uint16_t R5 = (r * 31 + 127) / 255;  // ≈ round(r/255*31)
-    uint16_t G6 = (g * 63 + 127) / 255;  // ≈ round(g/255*63)
-    uint16_t B5 = (b * 31 + 127) / 255;
-    return (R5 << 11) | (G6 << 5) | B5;
-  }
-
-  inline void rgb565_to_rgb888(uint16_t c,
-                                    uint8_t *r, uint8_t *g, uint8_t *b)
-  {
-    uint8_t R5 = (c >> 11) & 0x1F;   // 5 bits
-    uint8_t G6 = (c >> 5)  & 0x3F;   // 6 bits
-    uint8_t B5 =  c        & 0x1F;   // 5 bits
-
-    // Bit replication to fill 8 bits (keeps brightness scale reasonable)
-    *r = (R5 << 3) | (R5 >> 2);      // 5 -> 8
-    *g = (G6 << 2) | (G6 >> 4);      // 6 -> 8
-    *b = (B5 << 3) | (B5 >> 2);      // 5 -> 8
-  }
-  
+protected:    
   inline void matrot(const float x0, const float y0, uint16_t &x1, uint16_t &y1) const {
       float xx1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2];
       float yy1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5];
@@ -430,6 +438,11 @@ protected:
   static uint8_t m_nptrk; // number of pixels for track gauge
   uint16_t m_coloff;      // color for inactive branch
   uint16_t m_colon;       // color cor active branch
+/*  uint16_t m_xwin;
+  uint16_t m_ywin;
+  uint16_t m_wlen;
+  uint16_t m_whig;
+  bool m_fdraw;*/
   kside m_side;           // side of the turnout (right, left)
   float m_xpos;          // x position for the track
   float m_ypos;          // y position for the track
@@ -460,50 +473,52 @@ public:
 * y      -- position of the start of the switch
 * rot    -- rotation angle
 */
-    int16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
+    uint16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
     uint16_t irad = m_rad*m_scale+0.5;
-    int16_t mshift = 0.33*m_npbed + 0.5;
+    uint16_t mshift = 0.33*m_npbed + 0.5;
     float angle = 0;
 
    
     uint16_t color = m_coloff;
-    int8_t jorder = 1-state;
+    int8_t jorder = -2-state;
     
     while(1) {
       if(jorder > 0) {
         matset(m_rotation, m_xpos, m_ypos);
         m_side = kleft;
-        if(jorder == 3) color=m_colon;
+        if(jorder == 4) color=m_colon;
         drawArc(irad,90-0.5*m_ang,90+0.5*m_ang,color, mshift);
+        if(jorder == 4) break;
       }
-      if(jorder++ == 3) break;
+      ++jorder;
 
       if(jorder > 0) {
         matset(m_rotation, m_xpos, m_ypos);
         m_side = kright;
-        if(jorder == 3) color=m_colon;
+        if(jorder == 4) color=m_colon;
         drawArc(irad,270-0.5*m_ang,270+0.5*m_ang,color, mshift);
+        if(jorder == 4) break;
       }
-      if(jorder++ == 3) break;
+      ++jorder;
 
       if(jorder > 0) {
         angle = m_rotation+0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
-        if(jorder == 3) color=m_colon;
+        if(jorder == 4) color=m_colon;
         drawLine(-len,len,color);
+        if(jorder == 4) break;
       }
-      if(jorder++==3) break;
+      ++jorder;
 
       if(jorder > 0) {  
         angle = m_rotation-0.5*m_ang;
         matset(angle,m_xpos,m_ypos);
-        if(jorder == 3) color=m_colon;
+        if(jorder == 4) color=m_colon;
         drawLine(-len,len,color);
-       tft.endWrite();
-      }
-      if(jorder++==3) break;
+        if(jorder == 4) break;
+     }
+      ++jorder;
     }
-    matset(m_rotation,m_xpos,m_ypos);
   }
 
 private:
@@ -538,15 +553,17 @@ public:
         float ang1 = m_side == kleft ? 90-m_ang : 270;
         if(jorder == 2) color=m_colon;
         drawArc(irad,ang1,ang1+m_ang,color);
+        if(jorder == 2) break;
       }
-      if(jorder++ == 2) break;
+      ++jorder;
 
       if(jorder > 0) {
         uint16_t len = m_len*m_scale+0.5;
         if(jorder == 2) color=m_colon;
         drawLine(0,len,color);
+        if(jorder == 2) break;
       }
-      if(jorder++ == 2) break;
+      ++jorder;
    }
  }
 
@@ -802,8 +819,11 @@ void setup() {
   
   tft.setTextSize(2);
   uint8_t ostate[8];
-  for(uint8_t i=0; i<8; ++i)
+  uint8_t state[8];
+  for(uint8_t i=0; i<8; ++i) {
     ostate[i] = 0XF;
+    state[i] = 0XF;
+  }
 
   // For classic font (setFont(NULL)) with scaling:
   int16_t x1;
@@ -930,7 +950,7 @@ void setup() {
       ypos = heig4+0.08*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
       tft.print(F("4-"));
-       tft.setCursor(xpos,ypos);
+      tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
