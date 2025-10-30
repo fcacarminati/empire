@@ -825,6 +825,25 @@ void setup() {
     state[i] = 0XF;
   }
 
+  uint16_t xxpos[8] = {uint16_t(0.12*dw+0.5),        uint16_t(0.92*dw+0.5),        uint16_t(0.92*dw+0.50),
+                       uint16_t(0.12*dw+0.5),        uint16_t(0.36*dw+0.5),        uint16_t(0.36*dw+0.5),
+                       uint16_t(dw*(1-0.373)+0.5),   uint16_t(dw*(1-0.373)+0.5)};
+  uint16_t yypos[8] = {uint16_t(heig1-0.125*dh+0.5), uint16_t(heig1-0.125*dh),     uint16_t(heig4+0.08*dh+0.5),
+                       uint16_t(heig4+0.08*dh+0.5),  uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5),
+                       uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5)};
+
+  track *tvect[8];
+  tvect[0] = &turn1;
+  tvect[1] = &turn2;
+  tvect[2] = &turn3;
+  tvect[3] = &turn4;
+  tvect[4] = &slip1;
+  tvect[5] = &slip2;
+  tvect[6] = &slip3;
+  tvect[7] = &slip4;
+  
+  char tname[4];
+
   // For classic font (setFont(NULL)) with scaling:
   int16_t x1;
   int16_t y1; 
@@ -833,7 +852,6 @@ void setup() {
   tft.setFont(NULL);
   tft.setTextSize(2);              // example
   tft.getTextBounds("A", 0, 0, &x1, &y1, &tw, &th); // bounding box of 'A'
-  Serial.print(F("Text width "));Serial.println(tw);
 
   uint16_t istart = 0X0FBB + 1;
   istart = 0;
@@ -849,14 +867,14 @@ void setup() {
     const int8_t xshift = -5;
     const int8_t yshift = -4;
 
-    uint8_t state1 = i>>11 & 1;
-    uint8_t state2 = i>>10 & 1;
-    uint8_t state3 = i>>9 & 1;
-    uint8_t state4 = i>>8 & 1;
-    uint8_t state5 = i>>6 & 3;
-    uint8_t state6 = i>>4 & 3;
-    uint8_t state7 = i>>2 & 3;
-    uint8_t state8 = i & 3;
+    state[0] = i>>11 & 1;
+    state[1] = i>>10 & 1;
+    state[2] = i>>9 & 1;
+    state[3] = i>>8 & 1;
+    state[4] = i>>6 & 3;
+    state[5] = i>>4 & 3;
+    state[6] = i>>2 & 3;
+    state[7] = i & 3;
 
     uint16_t xpos = 0;
     uint16_t ypos = 0;
@@ -865,24 +883,23 @@ void setup() {
 
     uint16_t ctext = coltext;
 
-    if((state1 == 0 && state5 == 0) || (state8 == 0 && state3 == 0) || (state8 == 2 && state5 == 1) || 
-       (state8 == 3 && state3 == 0) || (state7 == 1 && state6 == 0) || (state7 == 2 && state2 == 0) || 
-       (state7 == 3 && state6 == 0) || (state7 == 0 && state6 == 1) || (state7 == 1 && state2 == 0) || 
-       (state4 == 0 && state6 == 1) || (state4 == 0 && state6 == 3) || (state7 == 0 && state6 == 2) ||
-       (state1 == 0 && state5 == 2) || (state8 == 1 && state5 == 3) || (state4 == 1 && state6 == 0) || 
-       (state8 == 1 && state3 == 1) || (state7 == 3 && state6 == 3) || (state6 == 3 && state8 == 2) || 
-       (state4 == 1 && state6 == 2) || (state5 == 1 && state8 == 0) || /*(state6 == 0 && state8 == 3) || */
-       (state8 == 2 && state3 == 1) || /*(state6 == 0 && state8 == 0) || */(state6 == 3 && state8 == 0) || 
-       (state5 == 3 && state8 == 3) || (state2 == 1 && state7 == 0) || (state6 == 2 && state7 == 2) || 
-       (state7 == 2 && state5 == 3) || (state7 == 3 && state2 == 1) || (state6 == 1 && state7 == 2) ||
-       (state7 == 1 && state6 == 3) || (state5 == 0 && state8 == 1) || (state1 == 1 && state5 == 1) || 
-       (state5 == 2 && state8 == 2) || (state5 == 2 && state7 == 3) || (state1 == 1 && state5 == 3) || 
-       (state8 == 3 && state5 == 0) || (state5 == 0 && state7 == 2) || (state5 == 2 && state7 == 1) ||
-       (state6 == 2 && state8 == 3) || (state5 == 2 && state8 == 0)
+    if((state[0] == 0 && state[4] == 0) || (state[7] == 0 && state[2] == 0) || (state[7] == 2 && state[4] == 1) || 
+       (state[7] == 3 && state[2] == 0) || (state[6] == 1 && state[5] == 0) || (state[6] == 2 && state[1] == 0) || 
+       (state[6] == 3 && state[5] == 0) || (state[6] == 0 && state[5] == 1) || (state[6] == 1 && state[1] == 0) || 
+       (state[3] == 0 && state[5] == 1) || (state[3] == 0 && state[5] == 3) || (state[6] == 0 && state[5] == 2) ||
+       (state[0] == 0 && state[4] == 2) || (state[7] == 1 && state[4] == 3) || (state[3] == 1 && state[5] == 0) || 
+       (state[7] == 1 && state[2] == 1) || (state[6] == 3 && state[5] == 3) || (state[5] == 3 && state[7] == 2) || 
+       (state[3] == 1 && state[5] == 2) || (state[4] == 1 && state[7] == 0) || (state[7] == 2 && state[2] == 1) ||
+       (state[5] == 3 && state[7] == 0) || (state[4] == 3 && state[7] == 3) || (state[1] == 1 && state[6] == 0) ||
+       (state[5] == 2 && state[6] == 2) || (state[6] == 2 && state[4] == 3) || (state[6] == 3 && state[1] == 1) ||
+       (state[5] == 1 && state[6] == 2) || (state[6] == 1 && state[5] == 3) || (state[4] == 0 && state[7] == 1) ||
+       (state[0] == 1 && state[4] == 1) || (state[4] == 2 && state[7] == 2) || (state[4] == 2 && state[6] == 3) ||
+       (state[0] == 1 && state[4] == 3) || (state[7] == 3 && state[4] == 0) || (state[4] == 0 && state[6] == 2) ||
+       (state[4] == 2 && state[6] == 1) || (state[5] == 2 && state[7] == 3) || (state[4] == 2 && state[7] == 0)
       ) {
         skip = true;
         ctext = RED;
-        if(skip) continue;
+        continue;
        }
  
     nvalid++;
@@ -894,130 +911,165 @@ void setup() {
     sprintf(buf, "%03X", i);        // 3 hex digits, uppercase, zero-padded
     tft.print(buf);
     if(skip) {
-      yield();
       continue;
     }
     tft.setTextColor(coltext);
 
-    if(state1 != ostate[0]) {
-      turn1.draw(state1);
-      xpos = 0.12*dw+0.5;
-      ypos = heig1-0.125*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("1-"));
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state1);
-      ostate[0] = state1;
+    for(uint8_t i = 0; i<8; ++i) {
+      if(state[i] != ostate[i]) {
+        tvect[i]->draw(state[i]);
+        xpos = xxpos[i];
+        ypos = yypos[i];
+        tft.setCursor(xpos-2.5*tw,ypos);
+        sprintf(tname,"%d-",i+1);
+        tft.print(tname);
+        tft.setCursor(xpos,ypos);
+        xpos += xshift;
+        ypos += yshift;
+        tft.fillRect(xpos,ypos,20,22,colback);
+        tft.drawRect(xpos,ypos,20,22,GREEN);
+        tft.print(state[i]);
+        ostate[i] = state[i];
+      }
     }
 
-    if(state2 != ostate[1]) {
-      turn2.draw(state2);
-      xpos = 0.92*dw+0.5;
-      ypos = heig1-0.125*dh;
+#ifdef NEVER
+    if(state[0] != ostate[0]) {
+      /*turn1.*/tvect[0]->draw(state[0]);
+      xpos = xxpos[0];//0.12*dw+0.5;
+      ypos = yypos[0];//heig1-0.125*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("2-"));
+      int i = 0;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("1-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state2);
-      ostate[1] = state2;
+      tft.print(state[0]);
+      ostate[0] = state[0];
     }
 
-    if(state3 != ostate[2]) {
-      turn3.draw(state3);
-      xpos = 0.92*dw+0.5;
-      ypos = heig4+0.08*dh+0.5;
+    if(state[1] != ostate[1]) {
+      /*turn2.*/tvect[1]->draw(state[1]);
+      xpos = xxpos[1];//0.92*dw+0.5;
+      ypos = yypos[1];//heig1-0.125*dh;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("3-"));
+      int i = 1;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("2-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state3);
-      ostate[2] = state3;
+      tft.print(state[1]);
+      ostate[1] = state[1];
     }
 
-    if(state4 != ostate[3]) {
-      turn4.draw(state4);
-      xpos = 0.12*dw+0.5;
-      ypos = heig4+0.08*dh+0.5;
+    if(state[2] != ostate[2]) {
+      /*turn3.*/tvect[2]->draw(state[2]);
+      xpos = xxpos[2];//0.92*dw+0.5;
+      ypos = yypos[2];//heig4+0.08*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("4-"));
+      int i = 2;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("3-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state4);
-      ostate[3] = state4;
+      tft.print(state[2]);
+      ostate[2] = state[2];
     }
 
-    if(state5 != ostate[4]) {
-      slip1.draw(state5);
-      xpos = 0.36*dw+0.5;
-      ypos = heig1-0.125*dh+0.5;
+    if(state[3] != ostate[3]) {
+      /*turn4.*/tvect[3]->draw(state[3]);
+      xpos = xxpos[3];//0.12*dw+0.5;
+      ypos = yypos[3];//heig4+0.08*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("5-"));
+      int i = 3;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("4-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state5);
-      ostate[4] = state5;
+      tft.print(state[3]);
+      ostate[3] = state[3];
     }
 
-    if(state6 != ostate[5]) {
-      slip2.draw(state6);
-      xpos = 0.36*dw+0.5;
-      ypos = heig4+0.08*dh+0.5;
+    if(state[4] != ostate[4]) {
+      /*slip1.*/tvect[4]->draw(state[4]);
+      xpos = xxpos[4];//0.36*dw+0.5;
+      ypos = yypos[4];//heig1-0.125*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("6-"));
+      int i = 4;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("5-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state6);
-      ostate[5] = state6;
+      tft.print(state[4]);
+      ostate[4] = state[4];
     }
 
-    if(state7 != ostate[6]) {
-      slip3.draw(state7);
-      xpos = dw*(1-0.373)+0.5;
-      ypos = heig1-0.125*dh+0.5;
+    if(state[5] != ostate[5]) {
+      /*slip2.*/tvect[5]->draw(state[5]);
+      xpos = xxpos[5];//0.36*dw+0.5;
+      ypos = yypos[5];//heig4+0.08*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("7-"));
+      int i = 5;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("6-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state7);
-      ostate[6] = state7;
+      tft.print(state[5]);
+      ostate[5] = state[5];
     }
 
-    if(ostate[7] != state8) {
-      slip4.draw(state8);
-      xpos = dw*(1-0.373)+0.5;
-      ypos = heig4+0.08*dh+0.5;
+    if(state[6] != ostate[6]) {
+      /*slip3.*/tvect[6]->draw(state[6]);
+      xpos = xxpos[6];//dw*(1-0.373)+0.5;
+      ypos = yypos[6];//heig1-0.125*dh+0.5;
       tft.setCursor(xpos-2.5*tw,ypos);
-      tft.print(F("8-"));
+      int i = 6;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("7-")*/);
       tft.setCursor(xpos,ypos);
       xpos += xshift;
       ypos += yshift;
       tft.fillRect(xpos,ypos,20,22,colback);
       tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state8);
-      ostate[7] = state8;
+      tft.print(state[6]);
+      ostate[6] = state[6];
     }
+
+    if(ostate[7] != state[7]) {
+      /*slip4.*/tvect[7]->draw(state[7]);
+      xpos = xxpos[7];//dw*(1-0.373)+0.5;
+      ypos = yypos[7];//heig4+0.08*dh+0.5;
+      tft.setCursor(xpos-2.5*tw,ypos);
+      int i = 7;
+      sprintf(tname,"%d-",i+1);
+      tft.print(tname/*F("8-")*/);
+      tft.setCursor(xpos,ypos);
+      xpos += xshift;
+      ypos += yshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tft.print(state[7]);
+      ostate[7] = state[7];
+    }
+    #endif
   
     tft.setTextColor(coltext);
     tft.setCursor(dw/2+2*tw,0.083*dh+0.5);
@@ -1025,8 +1077,6 @@ void setup() {
     delay(1000);
    // for(;;);
   }
-
-  yield();
   
   Serial.print("Numnber of valid configurations ");Serial.println(nvalid);
 
