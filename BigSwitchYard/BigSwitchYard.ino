@@ -210,8 +210,8 @@ void loop()
 * Simulated with an ILI9341, will switch to ILI9486
 */
 
-//#define TFT25257
-#define ILI9341
+#define TFT25257
+//#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -366,16 +366,14 @@ public:
     matset(m_rotation, m_xpos, m_ypos);
   }
 
-  virtual void draw(uint16_t ) {}
+  virtual void draw(uint16_t ) = 0;
 protected:    
-  inline void matrot(const float x0, const float y0, uint16_t &x1, uint16_t &y1) const {
-      float xx1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2];
-      float yy1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5];
-      x1 = xx1+0.5;
-      y1 = yy1+0.5;
+  void matrot(const int16_t x0, const int16_t y0, uint16_t &x1, uint16_t &y1) const {
+      x1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2];
+      y1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5];
   }
 
-  inline void matset(float angle, float x, float y) {
+  void matset(float angle, float x, float y) {
     /*
     *  LUT tables are in degrees, so we use degrees
     */
@@ -390,25 +388,25 @@ protected:
 
   void drawArc(float rad, float ddeg0, float ddeg1, int16_t color, int16_t yshift=0) {
       
-    float deg0 = ddeg0<ddeg1 ? ddeg0 : ddeg1;
-    float deg1 = ddeg0<ddeg1 ? ddeg1 : ddeg0;
+    const float deg0 = ddeg0<ddeg1 ? ddeg0 : ddeg1;
+    const float deg1 = ddeg0<ddeg1 ? ddeg1 : ddeg0;
     /*
     * > 2 pix per step
     */
-    int16_t npix = rad*degrad+0.5;
-    float hnorm = 1/(1.5*npix);
-    uint16_t nstep = 1.5*npix*(deg1-deg0)+0.5;
-    int8_t rsign = m_side == kright ? 1 : -1;
-    int8_t end = m_nptrk/2;
+    const int16_t npix = rad*degrad+0.5;
+    const float hnorm = 1/(1.5*npix);
+    const uint16_t nstep = 1.5*npix*(deg1-deg0)+0.5;
+    const int8_t rsign = m_side == kright ? 1 : -1;
+    const int8_t end = m_nptrk/2;
     tft.startWrite();
     tft.setAddrWindow(0,0,dw,dh);
     for(int8_t j=-end; j<=end; ++j) {
        for(uint16_t i=0; i<= nstep; ++i) {
         uint16_t xp = 0;
         uint16_t yp = 0;
-        float ang = (deg0+hnorm*i) /**degrad*/;
-        float xp0 = (rad+j) * lutcos(ang);
-        float yp0 = (rad+j) * lutsin(ang) + rsign*(rad+yshift);
+        const float ang = (deg0+hnorm*i);
+        const float xp0 = (rad+j) * lutcos(ang);
+        const float yp0 = (rad+j) * lutsin(ang) + rsign*(rad+yshift);
         matrot(xp0,yp0,xp,yp);
         tft.writePixel(xp,yp,color);
       }
@@ -417,18 +415,16 @@ protected:
   }
 
   void drawLine(int16_t xx0, int16_t xx1, uint16_t color) {
-    int8_t end = m_nptrk/2;
-//    uint16_t len = m_len*m_scale+0.5;
+    const int8_t end = m_nptrk/2;
     tft.startWrite();
     tft.setAddrWindow(0,0,dw,dh);
+    uint16_t x0 = 0;
+    uint16_t y0 = 0;
+    uint16_t x1 = 0;
+    uint16_t y1 = 0;
     for(int8_t j=-end; j<=end; ++j) {
-      uint16_t x0 = 0;
-      uint16_t y0 = 0;
-      uint16_t x1 = 0;
-      uint16_t y1 = 0;
       matrot(xx0,j,x0,y0);
       matrot(xx1,j,x1,y1);
-//          tft.drawLine(x0,y0,x1,y1,color);  
       tft.writeLine(x0,y0,x1,y1,color);  
    }
    tft.endWrite();
@@ -473,9 +469,9 @@ public:
 * y      -- position of the start of the switch
 * rot    -- rotation angle
 */
-    uint16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang/**degrad*/)+0.5;
-    uint16_t irad = m_rad*m_scale+0.5;
-    uint16_t mshift = 0.33*m_npbed + 0.5;
+    const uint16_t len = 0.5*(m_rad*m_scale)*lutsin(m_ang)+1.5;
+    const uint16_t irad = m_rad*m_scale+0.5;
+    const uint16_t mshift = 0.33*m_npbed + 0.5;
     float angle = 0;
 
    
@@ -590,8 +586,8 @@ public:
 * y      -- position of the start of the switch
 * rot    -- rotation angle
 */
-    uint16_t color = state == 0 ? m_coloff : m_colon;
-    int16_t xlen = 0.5*m_len*scale+0.5; 
+    const uint16_t color = state == 0 ? m_coloff : m_colon;
+    const int16_t xlen = 0.5*m_len*m_scale+0.5; 
     drawLine(-xlen,xlen,color);
   }
 
@@ -602,14 +598,14 @@ private:
 
 //================================= trackset ===============================
 class trackset {
-#define MAXTRACK 10
+#define MAXTRACK 3
 public:
   trackset():
   m_ntrack(0)
   {} 
 
   track* addTrack(track *newt) {
-    if(m_ntrack == MAXTRACK-1) {
+    if(m_ntrack == MAXTRACK) {
       Serial.println(F("addTrack cannot add another track"));
       return nullptr;
     } else {
@@ -629,6 +625,7 @@ private:
 };
 //================================= trackset ===============================
 
+#ifdef NEVER
 size_t freeHeap() {
   #if defined(ESP32)
     return ESP.getFreeHeap();
@@ -658,6 +655,7 @@ size_t freeHeap() {
     return 0; // unknown target
   #endif
 }
+#endif
 
 turnout turn1(23,15,87.35,kright);
 turnout turn2(23,15,87.35,kleft);
@@ -694,7 +692,7 @@ void setup() {
   tft.begin(begarg);
   tft.setRotation(1);
   
-  uint8_t palette = 2;
+  const uint8_t palette = 2;
 
   uint16_t coltext;
   uint16_t colback;
@@ -711,9 +709,9 @@ void setup() {
 
   preplut();
 #ifdef NEVER
-  float hnorm = 1./RAND_MAX;
-  uint32_t nrep = 10;
-  float hnorm1 = 1./nrep;
+  const float hnorm = 1./RAND_MAX;
+  const uint32_t nrep = 10;
+  const float hnorm1 = 1./nrep;
   float sumdiff1 = 0;
   float sumdiff2 = 0;
   float sumdiff12 = 0;
@@ -749,7 +747,7 @@ void setup() {
 
   // read diagnostics (optional but can help debug problems)
  #ifdef ILI9341
- uint8_t x = tft.readcommand8(ILI9341_RDMODE);
+  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
   Serial.print(F("Display Power Mode: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDMADCTL);
   Serial.print(F("MADCTL Mode: 0x")); Serial.println(x, HEX);
@@ -766,16 +764,16 @@ void setup() {
 /*
 * Define scale as pixels per cm
 */  
-  Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
+//  Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
  
   scale = dw/102.;
   track::setScale(scale);
-  float dist1 = 6.4;
-  float dist2 = 8.6;
-  uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5;
-  uint16_t heig2 = heig1+dist1*scale+0.5;
-  uint16_t heig3 = heig2+dist2*scale+0.5;
-  uint16_t heig4 = heig3+dist1*scale+0.5;
+  const float dist1 = 6.4;
+  const float dist2 = 8.6;
+  const uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5;
+  const uint16_t heig2 = heig1+dist1*scale+0.5;
+  const uint16_t heig3 = heig2+dist2*scale+0.5;
+  const uint16_t heig4 = heig3+dist1*scale+0.5;
 
   ts1.addTrack(&tr1)->setPosition( 15,dw/2,dh/2);
   ts1.addTrack(&tr2)->setPosition(-15,dw/2,dh/2);;
@@ -801,7 +799,7 @@ void setup() {
   str4.setPosition(0,dw/2,heig4); 
   str4.draw(0);
 
-  Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
+//  Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   yield();
   
   turn1.setPosition(0,0,heig1);
@@ -825,10 +823,10 @@ void setup() {
     state[i] = 0XF;
   }
 
-  uint16_t xxpos[8] = {uint16_t(0.12*dw+0.5),        uint16_t(0.92*dw+0.5),        uint16_t(0.92*dw+0.50),
+  const uint16_t xxpos[8] = {uint16_t(0.12*dw+0.5),        uint16_t(0.92*dw+0.5),        uint16_t(0.92*dw+0.50),
                        uint16_t(0.12*dw+0.5),        uint16_t(0.36*dw+0.5),        uint16_t(0.36*dw+0.5),
                        uint16_t(dw*(1-0.373)+0.5),   uint16_t(dw*(1-0.373)+0.5)};
-  uint16_t yypos[8] = {uint16_t(heig1-0.125*dh+0.5), uint16_t(heig1-0.125*dh),     uint16_t(heig4+0.08*dh+0.5),
+  const uint16_t yypos[8] = {uint16_t(heig1-0.125*dh+0.5), uint16_t(heig1-0.125*dh),     uint16_t(heig4+0.08*dh+0.5),
                        uint16_t(heig4+0.08*dh+0.5),  uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5),
                        uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5)};
 
@@ -842,8 +840,6 @@ void setup() {
   tvect[6] = &slip3;
   tvect[7] = &slip4;
   
-  char tname[4];
-
   // For classic font (setFont(NULL)) with scaling:
   int16_t x1;
   int16_t y1; 
@@ -857,11 +853,11 @@ void setup() {
   istart = 0;
 
   uint8_t nvalid = 0;
-  for(uint16_t i=istart; i<4096; ++i) {
+  for(uint16_t i=istart; i<0XFFF+1; ++i) {
 //    tft.print(i,HEX);
 // T1 | T2 | T3 | T4 | S1 | S2 | S3 | S4
 //  1    1    1    1    2    2    2    2
-// 11   10    9    8   7-6 5-4  3-2  1-0
+// 11   10    9    8  7-6  5-4  3-2  1-0
 //800  400  200  100    C0  30    C    3
 //
     const int8_t xshift = -5;
@@ -879,7 +875,7 @@ void setup() {
     uint16_t xpos = 0;
     uint16_t ypos = 0;
   
-    bool skip = false;
+//    bool skip = false;
 
     uint16_t ctext = coltext;
 
@@ -895,9 +891,9 @@ void setup() {
        (state[5] == 1 && state[6] == 2) || (state[6] == 1 && state[5] == 3) || (state[4] == 0 && state[7] == 1) ||
        (state[0] == 1 && state[4] == 1) || (state[4] == 2 && state[7] == 2) || (state[4] == 2 && state[6] == 3) ||
        (state[0] == 1 && state[4] == 3) || (state[7] == 3 && state[4] == 0) || (state[4] == 0 && state[6] == 2) ||
-       (state[4] == 2 && state[6] == 1) || (state[5] == 2 && state[7] == 3) || (state[4] == 2 && state[7] == 0)
-      ) {
-        skip = true;
+       (state[4] == 2 && state[6] == 1) || (state[5] == 2 && state[7] == 3) || (state[4] == 2 && state[7] == 0) ||
+        0) {
+    //    skip = true;
         ctext = RED;
         continue;
        }
@@ -910,9 +906,9 @@ void setup() {
     char buf[6];                        // enough for "0xFFF\0"
     sprintf(buf, "%03X", i);        // 3 hex digits, uppercase, zero-padded
     tft.print(buf);
-    if(skip) {
+    /* if(skip) {
       continue;
-    }
+    }*/
     tft.setTextColor(coltext);
 
     for(uint8_t i = 0; i<8; ++i) {
@@ -921,8 +917,8 @@ void setup() {
         xpos = xxpos[i];
         ypos = yypos[i];
         tft.setCursor(xpos-2.5*tw,ypos);
-        sprintf(tname,"%d-",i+1);
-        tft.print(tname);
+        sprintf(buf,"%d-",i+1);
+        tft.print(buf);
         tft.setCursor(xpos,ypos);
         xpos += xshift;
         ypos += yshift;
@@ -932,144 +928,6 @@ void setup() {
         ostate[i] = state[i];
       }
     }
-
-#ifdef NEVER
-    if(state[0] != ostate[0]) {
-      /*turn1.*/tvect[0]->draw(state[0]);
-      xpos = xxpos[0];//0.12*dw+0.5;
-      ypos = yypos[0];//heig1-0.125*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 0;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("1-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[0]);
-      ostate[0] = state[0];
-    }
-
-    if(state[1] != ostate[1]) {
-      /*turn2.*/tvect[1]->draw(state[1]);
-      xpos = xxpos[1];//0.92*dw+0.5;
-      ypos = yypos[1];//heig1-0.125*dh;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 1;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("2-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[1]);
-      ostate[1] = state[1];
-    }
-
-    if(state[2] != ostate[2]) {
-      /*turn3.*/tvect[2]->draw(state[2]);
-      xpos = xxpos[2];//0.92*dw+0.5;
-      ypos = yypos[2];//heig4+0.08*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 2;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("3-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[2]);
-      ostate[2] = state[2];
-    }
-
-    if(state[3] != ostate[3]) {
-      /*turn4.*/tvect[3]->draw(state[3]);
-      xpos = xxpos[3];//0.12*dw+0.5;
-      ypos = yypos[3];//heig4+0.08*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 3;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("4-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[3]);
-      ostate[3] = state[3];
-    }
-
-    if(state[4] != ostate[4]) {
-      /*slip1.*/tvect[4]->draw(state[4]);
-      xpos = xxpos[4];//0.36*dw+0.5;
-      ypos = yypos[4];//heig1-0.125*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 4;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("5-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[4]);
-      ostate[4] = state[4];
-    }
-
-    if(state[5] != ostate[5]) {
-      /*slip2.*/tvect[5]->draw(state[5]);
-      xpos = xxpos[5];//0.36*dw+0.5;
-      ypos = yypos[5];//heig4+0.08*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 5;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("6-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[5]);
-      ostate[5] = state[5];
-    }
-
-    if(state[6] != ostate[6]) {
-      /*slip3.*/tvect[6]->draw(state[6]);
-      xpos = xxpos[6];//dw*(1-0.373)+0.5;
-      ypos = yypos[6];//heig1-0.125*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 6;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("7-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[6]);
-      ostate[6] = state[6];
-    }
-
-    if(ostate[7] != state[7]) {
-      /*slip4.*/tvect[7]->draw(state[7]);
-      xpos = xxpos[7];//dw*(1-0.373)+0.5;
-      ypos = yypos[7];//heig4+0.08*dh+0.5;
-      tft.setCursor(xpos-2.5*tw,ypos);
-      int i = 7;
-      sprintf(tname,"%d-",i+1);
-      tft.print(tname/*F("8-")*/);
-      tft.setCursor(xpos,ypos);
-      xpos += xshift;
-      ypos += yshift;
-      tft.fillRect(xpos,ypos,20,22,colback);
-      tft.drawRect(xpos,ypos,20,22,GREEN);
-      tft.print(state[7]);
-      ostate[7] = state[7];
-    }
-    #endif
   
     tft.setTextColor(coltext);
     tft.setCursor(dw/2+2*tw,0.083*dh+0.5);
