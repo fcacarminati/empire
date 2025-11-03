@@ -211,6 +211,7 @@ void loop()
 */
 
 #include <math.h>
+#include <string.h>
 
 #define TFT25257
 //#define ILI9341
@@ -226,41 +227,41 @@ void loop()
 #endif
 
 float lut[91];
-const float degrad = acos(-1.)/180.;
-const float raddeg = 1./degrad;
+const float degrad = acosf(-1.f)/180.f;
+const float raddeg = 1.f/degrad;
 
 void preplut() {
   for(uint16_t i=0; i<91; ++i) {
     float ang = i*degrad;
-    lut[i] = sin(ang);
+    lut[i] = sinf(ang);
   }
 }
 
 float lutsin(float ang) {
-  ang = fmod(ang,360.);
-  ang = ang < 0 ? ang+360. : ang;
+  ang = fmodf(ang,360.f);
+  ang = ang < 0 ? ang+360.f : ang;
   int8_t isign = 1;
-  if(ang > 270.) {
-    ang = 360.-ang;
+  if(ang > 270.f) {
+    ang = 360.f-ang;
     isign =-1;
-  } else if(ang > 180.) {
-    ang = ang - 180.;
+  } else if(ang > 180.f) {
+    ang = ang - 180.f;
     isign = -1;
-  } else if(ang > 90.) {
-    ang = 180.-ang;
+  } else if(ang > 90.f) {
+    ang = 180.f-ang;
   }
-  if(ang >= 90.) return isign;
-  else if(ang <=0.) return 0;
+  if(ang >= 90.f) return isign;
+  else if(ang <=0.f) return 0.f;
   int iang = ang;
   float frac = ang - iang;
-  float lin = (1.-frac)*lut[iang]+frac*lut[iang+1];
+  float lin = (1.f-frac)*lut[iang]+frac*lut[iang+1];
   if(iang==0) return isign*lin;
-  float curv = lut[iang-1] - 2.*lut[iang] + lut[iang+1];
-  return isign*(lin - 0.5*frac*(1.-frac)*curv);
+  float curv = lut[iang-1] - 2.f*lut[iang] + lut[iang+1];
+  return isign*(lin - 0.5f*frac*(1.f-frac)*curv);
 }
 
 float lutcos(float ang) {
-  return lutsin(90.-ang);
+  return lutsin(90.f-ang);
 }
 
 inline uint16_t rgb888_to_rgb565_round(uint8_t r, uint8_t g, uint8_t b) {
@@ -361,9 +362,9 @@ public:
 
   static void setScale(float scale) {
     m_scale=scale;
-    m_npbed=3*scale+0.5;
+    m_npbed=3*scale+0.5f;
     m_npbed += 1-m_npbed%2;
-    m_nptrk=1.65*scale+0.5;
+    m_nptrk=1.65*scale+0.5f;
     m_nptrk += 1-m_nptrk%2;
   }
 
@@ -433,6 +434,7 @@ void drawEnd() {
   pack(yhigt-ylowt,3);
   m_drfirst = false;
   tft.drawRect(xlowt,ylowt,xhigt-xlowt,yhigt-ylowt,RED);
+  tft.drawRect(xlowt-1,ylowt-1,xhigt-xlowt+2,yhigt-ylowt+2,RED);
 }
 
   void updWin (uint16_t x0, uint16_t y0) {
@@ -449,9 +451,12 @@ void drawEnd() {
     /*
     * > 2 pix per step
     */
-    const uint8_t npix = rad*degrad+0.5;
-    const float hnorm = 1/(1.5*npix);
-    const uint16_t nstep = 1.5*npix*(deg1-deg0)+0.5;
+   //pixels per degree
+    uint8_t npix = (rad+yshift)*degrad+0.5f;
+    npix = npix > 0 ? npix : 1;
+    const float hnorm = 1/(1.2f*npix);
+    // 1.2 pixels per degree
+    const uint16_t nstep = 1.2f*npix*(deg1-deg0)+0.5f;
     const int8_t end = m_nptrk/2;
     uint16_t x0 = 0;
     uint16_t y0 = 0;
@@ -511,9 +516,9 @@ class slip: public track {
 public:
    slip(float len, uint8_t ang, float rad): 
    track(),
-   m_len(len*100+0.5),
+   m_len(len*100+0.5f),
    m_ang(ang),
-   m_rad(rad*100+0.5)
+   m_rad(rad*100+0.5f)
    {};
 
   void draw(uint8_t state) {
@@ -523,9 +528,9 @@ public:
 * rot    -- rotation angle
 */
 //    static uint16_t xlow=0,ylow=0,xlen=dw,ylen=dh;
-    const uint16_t len = 0.5*(0.01*m_rad*m_scale)*lutsin(m_ang)+1.5;
-    const uint16_t irad = 0.01*m_rad*m_scale+0.5;
-    const uint16_t mshift = 0.33*m_npbed + 0.5;
+    const uint16_t len = 0.5f*(0.01f*m_rad*m_scale)*lutsin(m_ang)+1.5;
+    const uint16_t irad = 0.01f*m_rad*m_scale+0.5f;
+    const uint16_t mshift = 0.33*m_npbed + 0.5f;
     float angle = 0;
    
     int8_t jorder = -2-state;
@@ -536,23 +541,23 @@ public:
     tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));     
     while(1) {
       if(jorder > 0) {
-        matset(0.01*m_rotation, m_xpos, m_ypos);
+        matset(0.01f*m_rotation, m_xpos, m_ypos);
         m_side = kleft;
-        drawArc(irad,90-0.5*m_ang,90+0.5*m_ang,jorder == 4 ? m_colon : m_coloff, mshift);
+        drawArc(irad,90-0.5f*m_ang,90+0.5f*m_ang,jorder == 4 ? m_colon : m_coloff, mshift);
         if(jorder == 4) break;
       }
       ++jorder;
 
       if(jorder > 0) {
-        matset(0.01*m_rotation, m_xpos, m_ypos);
+        matset(0.01f*m_rotation, m_xpos, m_ypos);
         m_side = kright;
-        drawArc(irad,270-0.5*m_ang,270+0.5*m_ang,jorder == 4 ? m_colon : m_coloff, mshift);
+        drawArc(irad,270-0.5f*m_ang,270+0.5f*m_ang,jorder == 4 ? m_colon : m_coloff, mshift);
         if(jorder == 4) break;
       }
       ++jorder;
 
       if(jorder > 0) {
-        angle = 0.01*m_rotation+0.5*m_ang;
+        angle = 0.01f*m_rotation+0.5f*m_ang;
         matset(angle,m_xpos,m_ypos);
         drawLine(-len,len,jorder == 4 ? m_colon : m_coloff);
         if(jorder == 4) break;
@@ -560,7 +565,7 @@ public:
       ++jorder;
 
       if(jorder > 0) {  
-        angle = 0.01*m_rotation-0.5*m_ang;
+        angle = 0.01f*m_rotation-0.5f*m_ang;
         matset(angle,m_xpos,m_ypos);
         drawLine(-len,len,jorder == 4 ? m_colon : m_coloff);
         if(jorder == 4) break;
@@ -583,9 +588,9 @@ class turnout: public track {
 public:
   turnout(float len, uint8_t ang, float rad, kside side):
     track(side),
-    m_len(len*100+0.5),
+    m_len(len*100+0.5f),
     m_ang(ang),
-    m_rad(rad*100+0.5)
+    m_rad(rad*100+0.5f)
     {};
 
   void draw(uint8_t state) {
@@ -596,9 +601,9 @@ public:
 */
     int8_t jorder = 1-state;
 
-    const uint16_t len = 0.01*m_len*m_scale+0.5;
-    const uint16_t irad = 0.01*m_rad*m_scale+0.5;
-    const float ang1 = m_side == kleft ? 90-m_ang : 270;
+    const uint16_t len = 0.01f*m_len*m_scale+0.5f;
+    const uint16_t irad = 0.01f*m_rad*m_scale+0.5f;
+    const float ang1 = m_side == kleft ? 90.f-m_ang : 270.f;
      
     tft.startWrite();
     tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));
@@ -634,10 +639,10 @@ class straight: public track {
 public:
   straight(float len):
     track(),
-    m_len(len*100+0.5)
+    m_len(len*100+0.5f)
     {};
 
-  const float getLen() const {return 0.01*m_len;}
+  const float getLen() const {return 0.01f*m_len;}
 
   void draw(uint8_t state) override {
 /*
@@ -649,7 +654,7 @@ public:
     tft.startWrite();
     tft.setAddrWindow(0,0,dw,dh);
  
-    const int16_t xlen = 0.5*0.01*m_len*m_scale+0.5; 
+    const int16_t xlen = 0.5f*0.01f*m_len*m_scale+0.5f; 
     drawLine(-xlen,xlen,state == 0 ? m_coloff : m_colon);
     tft.endWrite();
     if(m_drfirst) drawEnd();
@@ -721,24 +726,24 @@ size_t freeHeap() {
 }
 #endif
 
-turnout turn1(23,15,87.35,kright);
-turnout turn2(23,15,87.35,kleft);
-turnout turn3(23,15,87.35,kright);
-turnout turn4(23,15,87.35,kleft);
+turnout turn1(23,15,87.35f,kright);
+turnout turn2(23,15,87.35f,kleft);
+turnout turn3(23,15,87.35f,kright);
+turnout turn4(23,15,87.35f,kleft);
 slip slip1(23,15,105);
 slip slip2(23,15,105);
 slip slip3(23,15,105);
 slip slip4(23,15,105);
-straight tr1(5.);
-straight tr2(5.);
-straight tr3(4.);
-straight tr4(22.);
-straight tr5(22.);
-straight tr6(4.);
-straight tr7(22.);
-straight tr8(22.);
-straight str3(56.);
-straight str4(56.);
+straight tr1(5.f);
+straight tr2(5.f);
+straight tr3(4.f);
+straight tr4(22.f);
+straight tr5(22.f);
+straight tr6(4.f);
+straight tr7(22.f);
+straight tr8(22.f);
+straight str3(56.f);
+straight str4(56.f);
 trackset ts1;
 trackset ts2;
 trackset ts3;
@@ -772,21 +777,21 @@ void setup() {
 
   preplut();
 #ifdef NEVER
-  const float hnorm = 1./RAND_MAX;
+  const float hnorm = 1.f/RAND_MAX;
   const uint32_t nrep = 10;
-  const float hnorm1 = 1./nrep;
+  const float hnorm1 = 1.f/nrep;
   float sumdiff1 = 0;
   float sumdiff2 = 0;
   float sumdiff12 = 0;
   float sumdiff22 = 0;
   for(uint32_t i=0; i<nrep; ++i) {
     if(i%1000 == 0) Serial.println("Working");
-    float ang = 1000*(1.-2.*rand()*hnorm);
+    float ang = 1000.f*(1.f-2.f*rand()*hnorm);
 //    ang = 90.*rand()*hnorm;
     float diff1 = cos(ang*degrad) - lutcos(ang/**degrad*/);
     sumdiff1 += diff1;
     sumdiff12 += diff1*diff1;
-    if(fabs(diff1) > 5e-7) {
+    if(fabs(diff1) > 5e-7f) {
       Serial.print(F("cos diff "));
       Serial.print(diff1,7);
       Serial.print(F(", "));
@@ -795,7 +800,7 @@ void setup() {
     float diff2 = sin(ang*degrad) - lutsin(ang/**degrad*/);
     sumdiff2 += diff2;
     sumdiff22 += diff2*diff2;
-    if(fabs(diff2) > 5e-7) {
+    if(fabs(diff2) > 5e-7f) {
       Serial.print(F("sin diff "));
       Serial.print(diff2,7);
       Serial.print(F(", "));
@@ -829,30 +834,30 @@ void setup() {
 */  
 //  Serial.print(F("Free RAM before: ")); Serial.println(freeHeap());
  
-  scale = dw/102.;
+  scale = dw/102.f;
   track::setScale(scale);
-  const float dist1 = 6.4;
-  const float dist2 = 8.6;
-  const uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5;
-  const uint16_t heig2 = heig1+dist1*scale+0.5;
-  const uint16_t heig3 = heig2+dist2*scale+0.5;
-  const uint16_t heig4 = heig3+dist1*scale+0.5;
+  const float dist1 = 6.4f;
+  const float dist2 = 8.6f;
+  const uint16_t heig1 = dh/2-(dist2/2+dist1)*scale+0.5f;
+  const uint16_t heig2 = heig1+dist1*scale+0.5f;
+  const uint16_t heig3 = heig2+dist2*scale+0.5f;
+  const uint16_t heig4 = heig3+dist1*scale+0.5f;
 
   ts1.addTrack(&tr1)->setPosition( 15,dw/2,dh/2);
   ts1.addTrack(&tr2)->setPosition(-15,dw/2,dh/2);;
   ts1.draw(0);
 
   ts2.addTrack(&tr3)->setPosition(0,dw/2,heig2);
-  float hl = 0.5*tr4.getLen()*scale;
+  float hl = 0.5f*tr4.getLen()*scale;
   ts2.addTrack(&tr4)->setPosition(0,hl,heig2);
-  hl = 0.5*tr7.getLen()*scale;
+  hl = 0.5f*tr7.getLen()*scale;
   ts2.addTrack(&tr5)->setPosition(0,dw-hl,heig2);
   ts2.draw(0);
 
   ts3.addTrack(&tr6)->setPosition(0,dw/2,heig3);
-  hl = 0.5*tr7.getLen()*scale;
+  hl = 0.5f*tr7.getLen()*scale;
   ts3.addTrack(&tr7)->setPosition(0,hl,heig3);
-  hl = 0.5*tr7.getLen()*scale;
+  hl = 0.5f*tr7.getLen()*scale;
   ts3.addTrack(&tr8)->setPosition(0,dw-hl,heig3);
   ts3.draw(0);
 
@@ -872,7 +877,7 @@ void setup() {
 
   //float slip (L= 230mm 15° R=1050mm)
 
-  int16_t xshift = 35.*scale+0.5;
+  int16_t xshift = 35.*scale+0.5f;
   slip1.setPosition(7.5,xshift,heig2);
   slip2.setPosition(-7.5,xshift,heig3);
   slip3.setPosition(-7.5,dw-xshift,heig2);
@@ -886,12 +891,12 @@ void setup() {
     state[i] = 0XF;
   }
 
-  const uint16_t xxpos[8] = {uint16_t(0.12*dw+0.5),        uint16_t(0.92*dw+0.5),        uint16_t(0.92*dw+0.50),
-                       uint16_t(0.12*dw+0.5),        uint16_t(0.36*dw+0.5),        uint16_t(0.36*dw+0.5),
-                       uint16_t(dw*(1-0.373)+0.5),   uint16_t(dw*(1-0.373)+0.5)};
-  const uint16_t yypos[8] = {uint16_t(heig1-0.125*dh+0.5), uint16_t(heig1-0.125*dh),     uint16_t(heig4+0.08*dh+0.5),
-                       uint16_t(heig4+0.08*dh+0.5),  uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5),
-                       uint16_t(heig1-0.125*dh+0.5), uint16_t(heig4+0.08*dh+0.5)};
+  const uint16_t xxpos[8] = {uint16_t(0.12*dw+0.5f),        uint16_t(0.92*dw+0.5f),        uint16_t(0.92*dw+0.5f),
+                             uint16_t(0.12*dw+0.5f),        uint16_t(0.36*dw+0.5f),        uint16_t(0.36*dw+0.5f),
+                             uint16_t(dw*(1-0.373)+0.5f),   uint16_t(dw*(1-0.373)+0.5f)};
+  const uint16_t yypos[8] = {uint16_t(heig1-0.125*dh+0.5f), uint16_t(heig1-0.125*dh),     uint16_t(heig4+0.08*dh+0.5f),
+                             uint16_t(heig4+0.08*dh+0.5f),  uint16_t(heig1-0.125*dh+0.5f), uint16_t(heig4+0.08*dh+0.5f),
+                             uint16_t(heig1-0.125*dh+0.5f), uint16_t(heig4+0.08*dh+0.5f)};
 
   track *tvect[8];
   tvect[0] = &turn1;
@@ -962,8 +967,8 @@ void setup() {
        }
  
     nvalid++;
-    tft.fillRect(0,0,dw,0.167*dh+0.5,colback);
-    tft.setCursor(dw/2-9*tw,0.083*dh+0.5);
+    tft.fillRect(0,0,dw,0.167*dh+0.5f,colback);
+    tft.setCursor(dw/2-9*tw,0.083*dh+0.5f);
     tft.setTextColor(ctext);
     tft.print(F("Route 0X"));
     char buf[6];                        // enough for "0xFFF\0"
@@ -974,26 +979,26 @@ void setup() {
     }*/
     tft.setTextColor(coltext);
 
-    for(uint8_t i = 0; i<8; ++i) {
-      if(state[i] != ostate[i]) {
-        xpos = xxpos[i];
-        ypos = yypos[i];
+    for(uint8_t j = 0; j<8; ++j) {
+      if(state[j] != ostate[j]) {
+        xpos = xxpos[j];
+        ypos = yypos[j];
         tft.setCursor(xpos-2.5*tw,ypos);
-        sprintf(buf,"%d-",i+1);
+        sprintf(buf,"%d-",j+1);
         tft.print(buf);
         tft.setCursor(xpos,ypos);
         xpos += xshift;
         ypos += yshift;
         tft.fillRect(xpos,ypos,20,22,colback);
         tft.drawRect(xpos,ypos,20,22,GREEN);
-        tvect[i]->draw(state[i]);
-        tft.print(state[i]);
-        ostate[i] = state[i];
+        tvect[j]->draw(state[j]);
+        tft.print(state[j]);
+        ostate[j] = state[j];
       }
     }
   
     tft.setTextColor(coltext);
-    tft.setCursor(dw/2+2*tw,0.083*dh+0.5);
+    tft.setCursor(dw/2+2*tw,0.083f*dh+0.5f);
     tft.print(F("...done"));
     delay(1000);
   }
