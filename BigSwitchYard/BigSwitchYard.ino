@@ -535,10 +535,10 @@ public:
    
     int8_t jorder = -2-state;
 
-   if(m_drfirst) drawInit();
- 
-    tft.startWrite();
+    if(m_drfirst) drawInit();
     tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));     
+
+    tft.startWrite();
     while(1) {
       if(jorder > 0) {
         matset(0.01f*m_rotation, m_xpos, m_ypos);
@@ -605,10 +605,10 @@ public:
     const uint16_t irad = 0.01f*m_rad*m_scale+0.5f;
     const float ang1 = m_side == kleft ? 90.f-m_ang : 270.f;
      
-    tft.startWrite();
+    if(m_drfirst) drawInit();
     tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));
 
-    if(m_drfirst) drawInit();
+    tft.startWrite();
     while(1) {
       if(jorder > 0) {
         drawArc(irad,ang1,ang1+m_ang,jorder == 2 ? m_colon : m_coloff);
@@ -650,11 +650,12 @@ public:
 * y      -- position of the start of the switch
 * rot    -- rotation angle
 */
-    if(m_drfirst) drawInit();
-    tft.startWrite();
-    tft.setAddrWindow(0,0,dw,dh);
- 
     const int16_t xlen = 0.5f*0.01f*m_len*m_scale+0.5f; 
+
+    if(m_drfirst) drawInit();
+    tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));
+
+    tft.startWrite();
     drawLine(-xlen,xlen,state == 0 ? m_coloff : m_colon);
     tft.endWrite();
     if(m_drfirst) drawEnd();
