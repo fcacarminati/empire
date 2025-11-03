@@ -226,7 +226,7 @@ void loop()
 #include "MCUFRIEND_kbv.h"
 #endif
 
-float lut[91];
+static float lut[91];
 const float degrad = acosf(-1.f)/180.f;
 const float raddeg = 1.f/degrad;
 
@@ -378,8 +378,8 @@ public:
   virtual void draw(uint8_t ) = 0;
 protected:    
   void matrot(const float x0, const float y0, uint16_t &x1, uint16_t &y1) const {
-      x1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2]+0.5;
-      y1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5]+0.5;
+      x1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2]+0.5f;
+      y1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5]+0.5f;
   }
 
   void matset(float angle, uint16_t x, uint16_t y) {
