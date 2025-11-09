@@ -6,32 +6,164 @@
     {
       "type": "wokwi-arduino-mega",
       "id": "mega",
-      "top": 0.6,
-      "left": -0.6,
+      "top": -11.2,
+      "left": -194.6,
       "rotate": 90,
       "attrs": {}
     },
     {
       "type": "board-ili9341-cap-touch",
       "id": "lcd1",
-      "top": -49.28,
-      "left": 379.14,
+      "top": -58.88,
+      "left": 244.74,
       "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -317.8,
+      "left": -171,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo2",
+      "top": -317.8,
+      "left": -75,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo3",
+      "top": -317.8,
+      "left": 30.6,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo4",
+      "top": -317.8,
+      "left": 136.2,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo5",
+      "top": -317.8,
+      "left": 261,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo6",
+      "top": -317.8,
+      "left": 347.4,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo7",
+      "top": -317.8,
+      "left": 491.4,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo8",
+      "top": -317.8,
+      "left": 568.2,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo9",
+      "top": -39.4,
+      "left": 491.4,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo10",
+      "top": -39.4,
+      "left": 577.8,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo11",
+      "top": 171.8,
+      "left": 491.4,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo12",
+      "top": 171.8,
+      "left": 577.8,
+      "rotate": 270,
       "attrs": {}
     }
   ],
   "connections": [
     [ "lcd1:VCC", "mega:5V", "red", [ "v0" ] ],
     [ "lcd1:GND", "mega:GND", "black", [ "v0" ] ],
-    [ "lcd1:SCL", "mega:21", "cyan", [ "v0" ] ],
-    [ "lcd1:SDA", "mega:20", "white", [ "v0" ] ],
     [ "lcd1:CS", "mega:10", "orange", [ "v0" ] ],
     [ "lcd1:RST", "mega:8", "gold", [ "v0" ] ],
     [ "lcd1:D/C", "mega:9", "yellow", [ "v0" ] ],
     [ "lcd1:MOSI", "mega:51", "green", [ "v0" ] ],
     [ "lcd1:SCK", "mega:52", "limegreen", [ "v0" ] ],
-    [ "lcd1:LED", "mega:5V", "red", [ "v0" ] ],
-    [ "lcd1:MISO", "mega:50", "blue", [ "v0" ] ]
+    [ "lcd1:LED", "mega:3.3V", "red", [ "v-163.2", "h-252.3" ] ],
+    [ "lcd1:MISO", "mega:50", "blue", [ "v0" ] ],
+    [ "lcd1:SDA", "mega:20", "green", [ "h-9.6" ] ],
+    [ "mega:21", "lcd1:SCL", "green", [ "h163.2", "v-36.3" ] ],
+    [ "mega:5V", "servo1:V+", "red", [ "h0" ] ],
+    [ "servo1:V+", "servo2:V+", "red", [ "v19.2", "h96.1" ] ],
+    [ "servo2:V+", "servo3:V+", "red", [ "v19.2", "h105.7" ] ],
+    [ "servo3:V+", "servo4:V+", "red", [ "v19.2", "h105.7" ] ],
+    [ "servo4:V+", "servo5:V+", "red", [ "v19.2", "h105.7" ] ],
+    [ "servo5:V+", "servo6:V+", "red", [ "v19.2", "h105.7" ] ],
+    [ "servo6:V+", "servo12:V+", "red", [ "v19.2", "h57.7", "v-9.6" ] ],
+    [ "servo12:V+", "servo11:V+", "red", [ "v19.2", "h-105.5", "v-9.6" ] ],
+    [ "servo11:V+", "servo10:V+", "red", [ "v19.2", "h-105.5" ] ],
+    [ "servo10:V+", "servo9:V+", "red", [ "v19.2", "h-105.5" ] ],
+    [ "servo9:V+", "servo8:V+", "red", [ "v19.2", "h-105.5", "v-9.6" ] ],
+    [ "servo8:V+", "servo7:V+", "red", [ "v19.2", "h-95.9" ] ],
+    [ "mega:GND.2", "servo1:GND", "black", [ "h0" ] ],
+    [ "servo1:GND", "servo2:GND", "black", [ "v9.6", "h96" ] ],
+    [ "servo2:GND", "servo3:GND", "black", [ "v9.6", "h105.6" ] ],
+    [ "servo3:GND", "servo4:GND", "black", [ "v9.6", "h105.6" ] ],
+    [ "servo4:GND", "servo5:GND", "black", [ "v9.6", "h105.6" ] ],
+    [ "servo5:GND", "servo6:GND", "black", [ "v9.6", "h105.6" ] ],
+    [ "servo6:GND", "servo12:GND", "black", [ "v9.6", "h57.6" ] ],
+    [ "servo12:GND", "servo11:GND", "black", [ "v9.6", "h-105.6" ] ],
+    [ "servo11:GND", "servo10:GND", "black", [ "v9.6", "h-105.6" ] ],
+    [ "servo10:GND", "servo9:GND", "black", [ "v9.6", "h-105.6" ] ],
+    [ "servo9:GND", "servo8:GND", "black", [ "v9.6", "h-105.6" ] ],
+    [ "servo8:GND", "servo7:GND", "black", [ "v9.6", "h-96" ] ],
+    [ "mega:2", "servo1:PWM", "orange", [ "h-201.6", "v-282.4" ] ],
+    [ "mega:5", "servo2:PWM", "orange", [ "h0" ] ],
+    [ "mega:11", "servo3:PWM", "orange", [ "h0" ] ],
+    [ "mega:22", "servo4:PWM", "orange", [ "v36.2", "h171.7" ] ],
+    [ "mega:25", "servo5:PWM", "orange", [ "h8.65", "v35.8", "h268.8" ] ],
+    [ "mega:28", "servo6:PWM", "orange", [ "v65", "h392.45", "v-489.6" ] ],
+    [ "mega:31", "servo7:PWM", "orange", [ "h-10.6", "v45.4", "h-67.2" ] ],
+    [ "mega:34", "servo8:PWM", "orange", [ "v65", "h27.6" ] ],
+    [ "mega:37", "servo9:PWM", "orange", [ "h-10.9", "v103", "h182.4", "v-748.8" ] ],
+    [ "mega:40", "servo10:PWM", "orange", [ "v93.8", "h305.95" ] ],
+    [ "mega:43", "servo11:PWM", "orange", [ "h-10.7", "v131.8", "h422.4", "v-777.6" ] ],
+    [ "mega:46", "servo12:PWM", "orange", [ "v180.2", "h574.95", "v-38.4" ] ]
   ],
   "dependencies": {}
 }

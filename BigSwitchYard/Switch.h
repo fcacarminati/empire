@@ -1,0 +1,228 @@
+/* 
+ *  Switch class based derived from the Servo library class
+ */
+
+#include "Servo.h"
+class Switch: public Servo {
+public:
+  Switch(int spin, int dccpin, int button, int straight, int curve): 
+     Servo(),
+     m_spin(spin),
+     m_dccpin(dccpin),
+     m_button(button),
+     m_straight(straight),
+     m_curve(curve),
+     m_curpos(straight),
+     m_rot(m_straight>m_curve?-1:1),
+     m_phase(0),
+     m_prvtime(0),
+     m_curtime(0),
+     m_idle(true),
+     m_incr(1),
+     m_limit(straight) {
+     }
+
+  void Init() {
+    // Init pins here
+      pinMode(m_dccpin,OUTPUT);
+      pinMode(m_button,INPUT_PULLUP);
+
+      writeMicroseconds((m_straight+m_curve)/2);
+      attach(m_spin);
+      writeMicroseconds((m_straight+m_curve)/2);
+      delay(1000);
+      writeMicroseconds(m_curve);
+      delay(1000);
+      writeMicroseconds(m_straight);
+      delay(1000);
+      digitalWrite(m_dccpin,LOW);
+     }
+
+  int readButton() const {
+    /* Read the button */
+#ifdef DEBUG
+    delay(5);
+#endif
+    return digitalRead(m_button);
+  }
+  
+#ifdef NEVER
+  void Change_synch(bool straight) {
+    /*
+    Synchronous version.  
+    */
+    short int j;
+    if(straight) {
+      for(j=m_curpos; j != m_straight; j=j-m_rot) {
+        writeMicroseconds(j);
+        delay(10);
+        if(j==(m_curve+m_straight)/2) {
+          digitalWrite(m_dccpin,LOW);
+        }
+      }
+    }
+    else {
+      for(j=m_curpos; j != m_curve; j=j+m_rot) {
+        writeMicroseconds(j);
+        delay(10);
+        if(j==(m_curve+m_straight)/2) {
+          digitalWrite(m_dccpin,HIGH);
+        }
+      }
+    }
+    m_curpos = j;
+  }
+
+  void Change_async_1(bool straight) {
+    /*
+    Asynchronous version without any wait
+    */
+ 
+   if(m_phase == 0) {
+      if(straight) m_phase = 1;
+      else m_phase = -1;
+    }
+ 
+    if(m_phase == 1) {
+      if(m_curpos != m_straight) {
+        m_curtime = millis();
+        if(m_curtime-m_prvtime > 10) {
+          m_curpos -= m_rot;
+          writeMicroseconds(m_curpos);
+          m_prvtime=m_curtime;
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,LOW);
+        }
+      } else 
+          m_phase = 0;
+    } else
+      if(m_phase == -1) {
+        if(m_curpos != m_curve) {
+          m_curtime = millis();
+          if(m_curtime-m_prvtime > 10) {
+            m_curpos += m_rot;
+            writeMicroseconds(m_curpos);
+            m_prvtime=m_curtime;
+            if(m_curpos==(m_curve+m_straight)/2) 
+              digitalWrite(m_dccpin,HIGH);
+          }
+      } else
+          m_phase = 0;
+      }
+  }
+
+void Change_async2(bool straight) {
+  /*
+  Asynchronous version, but still with a 10ms wait
+  */
+ 
+   if(m_phase == 0) {
+      if(straight) m_phase = 1;
+      else m_phase = -1;
+    }
+ 
+    if(m_phase == 1) {
+      if(m_curpos != m_straight) {
+          m_curpos -= m_rot;
+          writeMicroseconds(m_curpos);
+          delay(10);
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,LOW);
+      } else 
+          m_phase = 0;
+    } else
+      if(m_phase == -1) {
+        if(m_curpos != m_curve) {
+            m_curpos += m_rot;
+            writeMicroseconds(m_curpos);
+            delay(10);
+            if(m_curpos==(m_curve+m_straight)/2) 
+              digitalWrite(m_dccpin,HIGH);
+      } else
+          m_phase = 0;
+      }
+  }
+
+void Change_async3(bool straight) {
+  /*
+  Asynchronous version with simpler opreational part and 10ms wait
+  */
+ 
+   if(m_idle) {
+      if(straight) {
+        if(m_curpos == m_straight) return true;
+        m_incr = -m_rot;
+        m_limit = m_straight;
+      } else {
+        if(m_curpos == m_curve) return true;
+        m_incr = m_rot;
+        m_limit = m_curve;
+      }
+      m_idle = false;
+    }
+ 
+    if(!m_idle) {
+      if(m_curpos != m_limit) {
+          m_curpos += m_incr;
+          writeMicroseconds(m_curpos);
+          delay(10);
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,(m_limit==m_curve));
+      } else 
+          m_idle = true;
+    } 
+  }
+#endif
+
+void Change(bool straight) {
+  /*
+  Asynchronous version, but still with a 10ms wait
+  */
+ 
+   if(m_idle) {
+      if(straight) {
+        if(m_curpos == m_straight) return;
+        m_incr = -m_rot;
+        m_limit = m_straight;
+      } else {
+        if(m_curpos == m_curve) return;
+        m_incr = m_rot;
+        m_limit = m_curve;
+      }
+      m_idle = false;
+    }
+ 
+    if(!m_idle) {
+      if(m_curpos != m_limit) {
+        m_curtime = millis();
+        if(m_curtime-m_prvtime > 10) {
+          m_curpos += m_incr;
+          writeMicroseconds(m_curpos);
+          m_prvtime=m_curtime;
+          if(m_curpos==(m_curve+m_straight)/2) 
+            digitalWrite(m_dccpin,(m_limit==m_curve));
+        }
+      } else 
+          m_idle = true;
+    } 
+  }
+
+private:
+  uint8_t m_spin;      // pin of the servo
+  uint8_t m_dccpin;    // pin to control dcc relay
+  uint8_t m_button;    // pin for manual button
+  uint16_t m_straight; // straight milliseconds
+  uint16_t m_curve;    // curve milliseconds
+  uint16_t m_curpos;   // current position
+  int8_t  m_rot;       // rotation from straight to curve
+  
+  int16_t m_phase;         // phase -1 from straight to curve
+                           //        0 no change
+                           //        1 from curve to straight
+  unsigned long m_prvtime; // previous time for async rotation
+  unsigned long m_curtime; // current time for async rotation
+
+  bool m_idle;
+  int8_t m_incr;
+  uint16_t m_limit;
+ };

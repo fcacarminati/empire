@@ -1,4 +1,211 @@
 /*
+
+// the regular Adafruit "TouchScreen.h" library only works on AVRs
+
+// different mcufriend shields have Touchscreen on different pins
+// and rotation.
+// Run the TouchScreen_Calibr_native sketch for calibration of your shield
+
+#include <MCUFRIEND_kbv.h>
+MCUFRIEND_kbv tft;       // hard-wired for UNO shields anyway.
+#include <TouchScreen.h>
+
+char *name = "Please Calibrate.";  //edit name of shield
+const int XP = 8, YP = A3, XM = A2, YM = 9;  //next common configuration
+//const int TS_LEFT=907,TS_RT=136,TS_TOP=942,TS_BOT=139;
+const int TS_LEFT=178,TS_RT=860,TS_TOP=947,TS_BOT=127;
+
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+TSPoint tp;
+
+#define MINPRESSURE 200
+#define MAXPRESSURE 1000
+
+int16_t BOXSIZE;
+int16_t PENRADIUS = 1;
+uint16_t ID, oldcolor, currentcolor;
+uint8_t Orientation = 0;    //PORTRAIT
+
+// Assign human-readable names to some common 16-bit color values:
+#define BLACK   0x0000
+#define BLUE    0x001F
+#define RED     0xF800
+#define GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0
+#define WHITE   0xFFFF
+
+void show_Serial(void)
+{
+    Serial.println(F("Most Touch Screens use pins 6, 7, A1, A2"));
+    Serial.println(F("But they can be in ANY order"));
+    Serial.println(F("e.g. right to left or bottom to top"));
+    Serial.println(F("or wrong direction"));
+    Serial.println(F("Edit name and calibration statements\n"));
+    Serial.println(name);
+    Serial.print(F("ID=0x"));
+    Serial.println(ID, HEX);
+    Serial.println("Screen is " + String(tft.width()) + "x" + String(tft.height()));
+    Serial.println("Calibration is: ");
+    Serial.println("LEFT = " + String(TS_LEFT) + " RT  = " + String(TS_RT));
+    Serial.println("TOP  = " + String(TS_TOP)  + " BOT = " + String(TS_BOT));
+    Serial.println("Wiring is always PORTRAIT");
+    Serial.println("YP=" + String(YP)  + " XM=" + String(XM));
+    Serial.println("YM=" + String(YM)  + " XP=" + String(XP));
+}
+
+void show_tft(void)
+{
+    tft.setCursor(0, 0);
+    tft.setTextSize(1);
+    tft.print(F("ID=0x"));
+    tft.println(ID, HEX);
+    tft.println("Screen is " + String(tft.width()) + "x" + String(tft.height()));
+    tft.println("");
+    tft.setTextSize(2);
+    tft.println(name);
+    tft.setTextSize(1);
+    tft.println("PORTRAIT Values:");
+    tft.println("LEFT = " + String(TS_LEFT) + " RT  = " + String(TS_RT));
+    tft.println("TOP  = " + String(TS_TOP)  + " BOT = " + String(TS_BOT));
+    tft.println("\nWiring is: ");
+    tft.println("YP=" + String(YP)  + " XM=" + String(XM));
+    tft.println("YM=" + String(YM)  + " XP=" + String(XP));
+    tft.setTextSize(2);
+    tft.setTextColor(RED);
+    tft.setCursor((tft.width() - 48) / 2, (tft.height() * 2) / 4);
+    tft.print("EXIT");
+    tft.setTextColor(YELLOW, BLACK);
+    tft.setCursor(0, (tft.height() * 6) / 8);
+    tft.print("Touch screen for loc");
+    while (1) {
+        tp = ts.getPoint();
+        pinMode(XM, OUTPUT);
+        pinMode(YP, OUTPUT);
+        if (tp.z < MINPRESSURE || tp.z > MAXPRESSURE) continue;
+        if (tp.x > 450 && tp.x < 570  && tp.y > 450 && tp.y < 570) break;
+        tft.setCursor(0, (tft.height() * 3) / 4);
+        tft.print("tp.x=" + String(tp.x) + " tp.y=" + String(tp.y) + "   ");
+    }
+}
+
+
+void setup(void)
+{
+    uint16_t tmp;
+
+    tft.reset();
+    ID = tft.readID();
+    tft.begin(ID);
+    Serial.begin(9600);
+    show_Serial();
+    tft.setRotation(Orientation);
+    tft.fillScreen(BLACK);
+    show_tft();
+
+    BOXSIZE = tft.width() / 6;
+    tft.fillScreen(BLACK);
+
+    tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);
+    tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, YELLOW);
+    tft.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GREEN);
+    tft.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, CYAN);
+    tft.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, BLUE);
+    tft.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, MAGENTA);
+
+    tft.drawRect(0, 0, BOXSIZE, BOXSIZE, WHITE);
+    currentcolor = RED;
+    delay(1000);
+}
+
+void loop()
+{
+    uint16_t xpos, ypos;  //screen coordinates
+    tp = ts.getPoint();   //tp.x, tp.y are ADC values
+
+    // if sharing pins, you'll need to fix the directions of the touchscreen pins
+    pinMode(XM, OUTPUT);
+    pinMode(YP, OUTPUT);
+    // we have some minimum pressure we consider 'valid'
+    // pressure of 0 means no pressing!
+
+    if (tp.z > MINPRESSURE && tp.z < MAXPRESSURE) {
+        // most mcufriend have touch (with icons) that extends below the TFT
+        // screens without icons need to reserve a space for "erase"
+        // scale the ADC values from ts.getPoint() to screen values e.g. 0-239
+        //
+        // Calibration is true for PORTRAIT. tp.y is always long dimension 
+        // map to your current pixel orientation
+        switch (Orientation) {
+            case 0:
+                xpos = map(tp.x, TS_LEFT, TS_RT, 0, tft.width());
+                ypos = map(tp.y, TS_TOP, TS_BOT, 0, tft.height());
+                break;
+            case 1:
+                xpos = map(tp.y, TS_TOP, TS_BOT, 0, tft.width());
+                ypos = map(tp.x, TS_RT, TS_LEFT, 0, tft.height());
+                break;
+            case 2:
+                xpos = map(tp.x, TS_RT, TS_LEFT, 0, tft.width());
+                ypos = map(tp.y, TS_BOT, TS_TOP, 0, tft.height());
+                break;
+            case 3:
+                xpos = map(tp.y, TS_BOT, TS_TOP, 0, tft.width());
+                ypos = map(tp.x, TS_LEFT, TS_RT, 0, tft.height());
+                break;
+        }
+
+        // are we in top color box area ?
+        if (ypos < BOXSIZE) {               //draw white border on selected color box
+            oldcolor = currentcolor;
+
+            if (xpos < BOXSIZE) {
+                currentcolor = RED;
+                tft.drawRect(0, 0, BOXSIZE, BOXSIZE, WHITE);
+            } else if (xpos < BOXSIZE * 2) {
+                currentcolor = YELLOW;
+                tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, WHITE);
+            } else if (xpos < BOXSIZE * 3) {
+                currentcolor = GREEN;
+                tft.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, WHITE);
+            } else if (xpos < BOXSIZE * 4) {
+                currentcolor = CYAN;
+                tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, WHITE);
+            } else if (xpos < BOXSIZE * 5) {
+                currentcolor = BLUE;
+                tft.drawRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, WHITE);
+            } else if (xpos < BOXSIZE * 6) {
+                currentcolor = MAGENTA;
+                tft.drawRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, WHITE);
+            }
+
+            if (oldcolor != currentcolor) { //rub out the previous white border
+                if (oldcolor == RED) tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);
+                if (oldcolor == YELLOW) tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, YELLOW);
+                if (oldcolor == GREEN) tft.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GREEN);
+                if (oldcolor == CYAN) tft.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, CYAN);
+                if (oldcolor == BLUE) tft.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, BLUE);
+                if (oldcolor == MAGENTA) tft.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, MAGENTA);
+            }
+        }
+        // are we in drawing area ?
+        if (((ypos - PENRADIUS) > BOXSIZE) && ((ypos + PENRADIUS) < tft.height())) {
+            tft.fillCircle(xpos, ypos, PENRADIUS, currentcolor);
+        }
+        // are we in erase area ?
+        // Plain Touch panels use bottom 10 pixels e.g. > h - 10
+        // Touch panels with icon area e.g. > h - 0
+        if (ypos > tft.height() - 10) {
+            // press the bottom of the screen to erase
+            tft.fillRect(0, BOXSIZE, tft.width(), tft.height() - BOXSIZE, BLACK);
+        }
+    }
+}
+
+*/
+
+/*
 * Driver program for the the big switcyard
 * Simulated with an ILI9341, will switch to ILI9486
 */
@@ -20,7 +227,6 @@
 #endif
 #endif
 
-#include "Switch.h"
 
 static float lut[91];
 const float degrad = acosf(-1.f)/180.f;
@@ -192,12 +398,7 @@ public:
   }
 
   virtual void draw(uint8_t ) = 0;
-
-  virtual void setState(uint8_t , uint8_t ) {};
-
-  virtual void setState(uint8_t ) {};
-
-  protected:    
+protected:    
   void matrot(const float x0, const float y0, uint16_t &x1, uint16_t &y1) const {
       x1 = x0*m_rotmat[0]+y0*m_rotmat[1]+m_rotmat[2]+0.5f;
       y1 = x0*m_rotmat[3]+y0*m_rotmat[4]+m_rotmat[5]+0.5f;
@@ -339,9 +540,7 @@ public:
    track(),
    m_len(len*100+0.5f),
    m_ang(ang),
-   m_rad(rad*100+0.5f),
-   m_switch1(nullptr),
-   m_switch2(nullptr)
+   m_rad(rad*100+0.5f)
    {};
 
   void draw(uint8_t state) {
@@ -399,25 +598,10 @@ public:
     if(m_drfirst) drawEnd();
   }
 
-  void setSwitch(Switch *sw1, Switch* sw2) {
-    m_switch1 = sw1;
-    m_switch2 = sw2;
-    m_switch1->Init();
-    m_switch2->Init();
-    Serial.println(F("Out2"));
-  }
-
-  void setState(uint8_t state) {
-    m_switch1->Change(state & 1);
-    m_switch2->Change((state>>1) & 1);
-  }
-
 private:
   uint16_t m_len;    // length of the straight part of the switch
   uint8_t m_ang;  // angle of the curved part of the switch
   uint16_t m_rad;    // radius of the curved part of the switch
-  Switch* m_switch1; // Switch servo & frog juicer
-  Switch* m_switch2; // Switch servo & frog juicer
 };
 //================================= slip ===================================
 
@@ -428,8 +612,7 @@ public:
     track(side),
     m_len(len*100+0.5f),
     m_ang(ang),
-    m_rad(rad*100+0.5f),
-    m_switch(nullptr)
+    m_rad(rad*100+0.5f)
     {};
 
   void draw(uint8_t state) {
@@ -465,20 +648,11 @@ public:
    if(m_drfirst) drawEnd();
   }
 
-  void setSwitch(Switch *sw) {
-    m_switch = sw;
-    m_switch->Init();
-  }
-
-  void setState(uint8_t state) {
-    m_switch->Change(state & 1);
-  }
 
 private:
   uint16_t m_len;    // length of the straight part of the switch
   uint8_t m_ang;  // angle of the curved part of the switch
   uint16_t m_rad;    // radius of the curved part of the switch
-  Switch* m_switch; // Switch servo & frog juicer
 };
 //================================= turnout ================================
 
@@ -753,25 +927,17 @@ void setup() {
   yield();
   
   turn1.setPosition(0,0,heig1);
-  turn1.setSwitch(new Switch(2,3,4,1200,1800));
   turn2.setPosition(180,dw,heig1);
-  turn2.setSwitch(new Switch(5,6,7,1200,1800));
   turn3.setPosition(180,dw,heig4);
-  turn3.setSwitch(new Switch(11,12,13,1200,1800));
   turn4.setPosition(0,0,heig4);
-  turn4.setSwitch(new Switch(22,23,24,1200,1800));
 
   //float slip (L= 230mm 15° R=1050mm)
 
   int16_t xshift = 35.*scale+0.5f;
   slip1.setPosition(7.5,xshift,heig2);
-  slip1.setSwitch(new Switch(25,26,27,1200,1800),new Switch(28,29,30,1200,1800));
   slip2.setPosition(-7.5,xshift,heig3);
-  slip2.setSwitch(new Switch(31,32,33,1200,1800),new Switch(34,35,36,1200,1800));
   slip3.setPosition(-7.5,dw-xshift,heig2);
-  slip3.setSwitch(new Switch(37,38,39,1200,1800),new Switch(40,41,42,1200,1800));
   slip4.setPosition(7.5,dw-xshift,heig3);
-  slip4.setSwitch(new Switch(43,44,45,1200,1800),new Switch(46,47,48,1200,1800));
   
   tft.setTextSize(2);
   for(uint8_t i=0; i<8; ++i) {
@@ -912,33 +1078,88 @@ if(0) {
     ostate[j] = state[j];
   }
 
-    tft.fillCircle(10,10,3,RED);
-    tft.fillCircle(dw-10,10,3,RED);
-    tft.fillCircle(10,dh-10,3,RED);
-    tft.fillCircle(dw-10,dh-10,3,RED);
+    tft.fillCircle(10,10,5,RED);
+    tft.fillCircle(dw-10,10,5,RED);
+    tft.fillCircle(10,dh-10,5,RED);
+    tft.fillCircle(dw-10,dh-10,5,RED);
+
+
+
+//#define TEST
+#ifdef TEST
+  Serial.println(F("Benchmark                Time (microseconds)"));
+  delay(10);
+  Serial.print(F("Screen fill              "));
+  Serial.println(testFillScreen());
+  delay(500);
+
+  Serial.print(F("Text                     "));
+  Serial.println(testText());
+  delay(3000);
+
+  Serial.print(F("Lines                    "));
+  Serial.println(testLines(CYAN));
+  delay(500);
+
+  Serial.print(F("Horiz/Vert Lines         "));
+  Serial.println(testFastLines(RED, BLUE));
+  delay(500);
+
+  Serial.print(F("Rectangles (outline)     "));
+  Serial.println(testRects(GREEN));
+  delay(500);
+
+  Serial.print(F("Rectangles (filled)      "));
+  Serial.println(testFilledRects(YELLOW, MAGENTA));
+  delay(500);
+
+  Serial.print(F("Circles (filled)         "));
+  Serial.println(testFilledCircles(10, MAGENTA));
+
+  Serial.print(F("Circles (outline)        "));
+  Serial.println(testCircles(10, WHITE));
+  delay(500);
+
+  Serial.print(F("Triangles (outline)      "));
+  Serial.println(testTriangles());
+  delay(500);
+
+  Serial.print(F("Triangles (filled)       "));
+  Serial.println(testFilledTriangles());
+  delay(500);
+
+  Serial.print(F("Rounded rects (outline)  "));
+  Serial.println(testRoundRects());
+  delay(500);
+
+  Serial.print(F("Rounded rects (filled)   "));
+  Serial.println(testFilledRoundRects());
+  delay(500);
+ 
+  Serial.println(F("Done!"));
+#endif
+
+
 }
 
 
 void loop(void) {
-  for(uint8_t j = 0; j<8; ++j) {
-      tvect[j]->setState(state[j]);
-  }
   if(ts.touched()) {
-//    Serial.println(F("Touched"));
+    Serial.println(F("Touched"));
     p = ts.getPoint();
     uint16_t xx = p.y;
     uint16_t yy = dh - p.x;
-//    Serial.print(F(" x = "));Serial.print(xx);Serial.print(F(" y = "));Serial.println(yy);
+    Serial.print(F(" x = "));Serial.print(xx);Serial.print(F(" y = "));Serial.println(yy);
     for(uint8_t j = 0; j<8; ++j) {
       if(tvect[j]->inPoint(xx,yy)) {
         tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
-//        Serial.print(F("In point of "));Serial.println(j+1);
-//        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
+        Serial.print(F("In point of "));Serial.println(j+1);
+        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
         if(j<4) 
           state[j] = (state[j]+1) & 1;
         else
           state[j] = (state[j]+1) & 3;
-//        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
+        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
         xpos = xxpos[j];
         ypos = yypos[j];
         tft.setCursor(xpos-2.5*tw,ypos);
@@ -953,6 +1174,7 @@ void loop(void) {
         tft.print(state[j]);
         if(!checkRoute(state)) {
           tft.setCursor(dw/2-4*tw,0.083*dh+0.5f);
+//          tft.setCursor(dw/2-4*tw,0.1*dh);
           tft.setTextColor(RED);
           tft.print(F("No route!"));
           tft.setTextColor(coltext);
@@ -960,4 +1182,288 @@ void loop(void) {
       }
     }  
   }
+#ifdef TEST
+  tft.fillScreen(NAVY);
+  tft.setCursor(0, 0);
+  tft.setTextColor(WHITE);  tft.setTextSize(1);
+  tft.println("Hello World!");
+  tft.setTextColor(YELLOW); tft.setTextSize(2);
+  tft.println(1234.56);
+  tft.setTextColor(RED);    tft.setTextSize(3);
+  tft.println(0xDEADBEEF, HEX);
+  tft.println();
+  tft.setTextColor(GREEN);
+  tft.setTextSize(5);
+  tft.println("Groop");
+  tft.setTextSize(2);
+  tft.println("I implore thee,");
+  tft.setTextSize(1);
+  tft.println("my foonting turlingdromes.");
+  tft.println("And hooptiously drangle me");
+  tft.println("with crinkly bindlewurdles,");
+  tft.println("Or I will rend thee");
+  tft.println("in the gobberwarts");
+  tft.println("with my blurglecruncheon,");
+  tft.println("see if I don't!");
+  delay(5000);
+#endif
 }
+
+#ifdef TEST
+unsigned long testFillScreen() {
+  unsigned long start = micros();
+  tft.fillScreen(BLACK);
+  yield();
+  tft.fillScreen(RED);
+  yield();
+  tft.fillScreen(GREEN);
+  yield();
+  tft.fillScreen(BLUE);
+  yield();
+  tft.fillScreen(BLACK);
+  yield();
+  return micros() - start;
+}
+
+unsigned long testText() {
+  tft.fillScreen(BLACK);
+  unsigned long start = micros();
+  tft.setCursor(0, 0);
+  tft.setTextColor(WHITE);  tft.setTextSize(1);
+  tft.println("Hello World!");
+  tft.setTextColor(YELLOW); tft.setTextSize(2);
+  tft.println(1234.56);
+  tft.setTextColor(RED);    tft.setTextSize(3);
+  tft.println(0xDEADBEEF, HEX);
+  tft.println();
+  tft.setTextColor(GREEN);
+  tft.setTextSize(5);
+  tft.println("Groop");
+  tft.setTextSize(2);
+  tft.println("I implore thee,");
+  tft.setTextSize(1);
+  tft.println("my foonting turlingdromes.");
+  tft.println("And hooptiously drangle me");
+  tft.println("with crinkly bindlewurdles,");
+  tft.println("Or I will rend thee");
+  tft.println("in the gobberwarts");
+  tft.println("with my blurglecruncheon,");
+  tft.println("see if I don't!");
+  return micros() - start;
+}
+
+unsigned long testLines(uint16_t color) {
+  unsigned long start, t;
+  int           x1, y1, x2, y2,
+                w = tft.width(),
+                h = tft.height();
+
+  tft.fillScreen(BLACK);
+  yield();
+  
+  x1 = y1 = 0;
+  y2    = h - 1;
+  start = micros();
+  for(x2=0; x2<w; x2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  x2    = w - 1;
+  for(y2=0; y2<h; y2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  t     = micros() - start; // fillScreen doesn't count against timing
+
+  yield();
+  tft.fillScreen(BLACK);
+  yield();
+
+  x1    = w - 1;
+  y1    = 0;
+  y2    = h - 1;
+  start = micros();
+  for(x2=0; x2<w; x2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  x2    = 0;
+  for(y2=0; y2<h; y2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  t    += micros() - start;
+
+  yield();
+  tft.fillScreen(BLACK);
+  yield();
+
+  x1    = 0;
+  y1    = h - 1;
+  y2    = 0;
+  start = micros();
+  for(x2=0; x2<w; x2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  x2    = w - 1;
+  for(y2=0; y2<h; y2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  t    += micros() - start;
+
+  yield();
+  tft.fillScreen(BLACK);
+  yield();
+
+  x1    = w - 1;
+  y1    = h - 1;
+  y2    = 0;
+  start = micros();
+  for(x2=0; x2<w; x2+=6) tft.drawLine(x1, y1, x2, y2, color);
+  x2    = 0;
+  for(y2=0; y2<h; y2+=6) tft.drawLine(x1, y1, x2, y2, color);
+
+  yield();
+  return micros() - start;
+}
+
+unsigned long testFastLines(uint16_t color1, uint16_t color2) {
+  unsigned long start;
+  int           x, y, w = tft.width(), h = tft.height();
+
+  tft.fillScreen(BLACK);
+  start = micros();
+  for(y=0; y<h; y+=5) tft.drawFastHLine(0, y, w, color1);
+  for(x=0; x<w; x+=5) tft.drawFastVLine(x, 0, h, color2);
+
+  return micros() - start;
+}
+
+unsigned long testRects(uint16_t color) {
+  unsigned long start;
+  int           n, i, i2,
+                cx = tft.width()  / 2,
+                cy = tft.height() / 2;
+
+  tft.fillScreen(BLACK);
+  n     = min(tft.width(), tft.height());
+  start = micros();
+  for(i=2; i<n; i+=6) {
+    i2 = i / 2;
+    tft.drawRect(cx-i2, cy-i2, i, i, color);
+  }
+
+  return micros() - start;
+}
+
+unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
+  unsigned long start, t = 0;
+  int           n, i, i2,
+                cx = tft.width()  / 2 - 1,
+                cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  n = min(tft.width(), tft.height());
+  for(i=n; i>0; i-=6) {
+    i2    = i / 2;
+    start = micros();
+    tft.fillRect(cx-i2, cy-i2, i, i, color1);
+    t    += micros() - start;
+    // Outlines are not included in timing results
+    tft.drawRect(cx-i2, cy-i2, i, i, color2);
+    yield();
+  }
+
+  return t;
+}
+
+unsigned long testFilledCircles(uint8_t radius, uint16_t color) {
+  unsigned long start;
+  int x, y, w = tft.width(), h = tft.height(), r2 = radius * 2;
+
+  tft.fillScreen(BLACK);
+  start = micros();
+  for(x=radius; x<w; x+=r2) {
+    for(y=radius; y<h; y+=r2) {
+      tft.fillCircle(x, y, radius, color);
+    }
+  }
+
+  return micros() - start;
+}
+
+unsigned long testCircles(uint8_t radius, uint16_t color) {
+  unsigned long start;
+  int           x, y, r2 = radius * 2,
+                w = tft.width()  + radius,
+                h = tft.height() + radius;
+
+  // Screen is not cleared for this one -- this is
+  // intentional and does not affect the reported time.
+  start = micros();
+  for(x=0; x<w; x+=r2) {
+    for(y=0; y<h; y+=r2) {
+      tft.drawCircle(x, y, radius, color);
+    }
+  }
+
+  return micros() - start;
+}
+
+unsigned long testTriangles() {
+  unsigned long start;
+  int           n, i, cx = tft.width()  / 2 - 1,
+                      cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  n     = min(cx, cy);
+  start = micros();
+  for(i=0; i<n; i+=5) {
+    tft.drawTriangle(
+      cx    , cy - i, // peak
+      cx - i, cy + i, // bottom left
+      cx + i, cy + i, // bottom right
+      tft.color565(i, i, i));
+  }
+
+  return micros() - start;
+}
+
+unsigned long testFilledTriangles() {
+  unsigned long start, t = 0;
+  int           i, cx = tft.width()  / 2 - 1,
+                   cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  start = micros();
+  for(i=min(cx,cy); i>10; i-=5) {
+    start = micros();
+    tft.fillTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
+      tft.color565(0, i*10, i*10));
+    t += micros() - start;
+    tft.drawTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
+      tft.color565(i*10, i*10, 0));
+    yield();
+  }
+
+  return t;
+}
+
+unsigned long testRoundRects() {
+  unsigned long start;
+  int           w, i, i2,
+                cx = tft.width()  / 2 - 1,
+                cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  w     = min(tft.width(), tft.height());
+  start = micros();
+  for(i=0; i<w; i+=6) {
+    i2 = i / 2;
+    tft.drawRoundRect(cx-i2, cy-i2, i, i, i/8, tft.color565(i, 0, 0));
+  }
+
+  return micros() - start;
+}
+
+unsigned long testFilledRoundRects() {
+  unsigned long start;
+  int           i, i2,
+                cx = tft.width()  / 2 - 1,
+                cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  start = micros();
+  for(i=min(tft.width(), tft.height()); i>20; i-=6) {
+    i2 = i / 2;
+    tft.fillRoundRect(cx-i2, cy-i2, i, i, i/8, tft.color565(0, i, 0));
+    yield();
+  }
+
+  return micros() - start;
+}
+#endif
