@@ -404,7 +404,6 @@ public:
     m_switch2 = sw2;
     m_switch1->Init();
     m_switch2->Init();
-    Serial.println(F("Out2"));
   }
 
   void setState(uint8_t state) {
