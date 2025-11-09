@@ -1,33 +1,37 @@
 {
   "version": 1,
-  "author": "Federico Carminati",
+  "author": "Liam Frahmann",
   "editor": "wokwi",
   "parts": [
     {
-      "type": "wokwi-arduino-uno",
-      "id": "uno",
-      "top": -156.6,
-      "left": -209.8,
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0.6,
+      "left": -0.6,
       "rotate": 90,
       "attrs": {}
     },
     {
-      "type": "wokwi-ili9341",
+      "type": "board-ili9341-cap-touch",
       "id": "lcd1",
-      "top": -206.3,
-      "left": 97.2,
+      "top": -49.28,
+      "left": 379.14,
       "rotate": 90,
       "attrs": {}
     }
   ],
   "connections": [
-    [ "lcd1:VCC", "uno:5V", "red", [ "v38.4", "h-153.6", "v0", "h-57.7" ] ],
-    [ "lcd1:GND", "uno:GND.1", "black", [ "v48", "h-9.6" ] ],
-    [ "lcd1:CS", "uno:10", "gold", [ "v38.4", "h19.2" ] ],
-    [ "lcd1:MOSI", "uno:11", "green", [ "v19.2", "h-19.21" ] ],
-    [ "lcd1:SCK", "uno:13", "green", [ "v9.6", "h-48.01" ] ],
-    [ "lcd1:MISO", "uno:12", "green", [ "v0" ] ],
-    [ "lcd1:D/C", "uno:9", "violet", [ "v38.4", "h9.6" ] ]
+    [ "lcd1:VCC", "mega:5V", "red", [ "v0" ] ],
+    [ "lcd1:GND", "mega:GND", "black", [ "v0" ] ],
+    [ "lcd1:SCL", "mega:21", "cyan", [ "v0" ] ],
+    [ "lcd1:SDA", "mega:20", "white", [ "v0" ] ],
+    [ "lcd1:CS", "mega:10", "orange", [ "v0" ] ],
+    [ "lcd1:RST", "mega:8", "gold", [ "v0" ] ],
+    [ "lcd1:D/C", "mega:9", "yellow", [ "v0" ] ],
+    [ "lcd1:MOSI", "mega:51", "green", [ "v0" ] ],
+    [ "lcd1:SCK", "mega:52", "limegreen", [ "v0" ] ],
+    [ "lcd1:LED", "mega:5V", "red", [ "v0" ] ],
+    [ "lcd1:MISO", "mega:50", "blue", [ "v0" ] ]
   ],
   "dependencies": {}
 }
