@@ -30,11 +30,11 @@ public:
       writeMicroseconds((m_straight+m_curve)/2);
       attach(m_spin);
       writeMicroseconds((m_straight+m_curve)/2);
-      delay(1000);
+      delay(500);
       writeMicroseconds(m_curve);
-      delay(1000);
+      delay(500);
       writeMicroseconds(m_straight);
-      delay(1000);
+      delay(500);
       digitalWrite(m_dccpin,LOW);
      }
 

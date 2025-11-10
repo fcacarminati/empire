@@ -595,13 +595,25 @@ size_t freeHeap() {
 #endif
 
 turnout turn1(23,15,87.35f,kright);
+Switch switch1(2,3,4,1200,1800);
 turnout turn2(23,15,87.35f,kleft);
+Switch switch2(5,6,7,1200,1800);
 turnout turn3(23,15,87.35f,kright);
+Switch switch3(11,12,13,1200,1800);
 turnout turn4(23,15,87.35f,kleft);
+Switch switch4(22,23,24,1200,1800);
 slip slip1(23,15,105);
+Switch switch5(25,26,27,1200,1800);
+Switch switch6(28,29,30,1200,1800);
 slip slip2(23,15,105);
+Switch switch7(31,32,33,1200,1800);
+Switch switch8(34,35,36,1200,1800); 
 slip slip3(23,15,105);
+Switch switch9(37,38,39,1200,1800);
+Switch switch10(40,41,42,1200,1800);
 slip slip4(23,15,105);
+Switch switch11(43,44,45,1200,1800);
+Switch switch12(46,47,48,1200,1800);
 straight tr1(5.f);
 straight tr2(5.f);
 straight tr3(4.f);
@@ -629,7 +641,6 @@ const int8_t ytshift = -4;
 char buf[6];                        // enough for "0xFFF\0"
 uint16_t coltext;
 uint16_t colback;
-
 
 // 6 Aand 8.6
 void setup() {
@@ -752,25 +763,25 @@ void setup() {
   yield();
   
   turn1.setPosition(0,0,heig1);
-  turn1.setSwitch(new Switch(2,3,4,1200,1800));
+  turn1.setSwitch(&switch1);
   turn2.setPosition(180,dw,heig1);
-  turn2.setSwitch(new Switch(5,6,7,1200,1800));
+  turn2.setSwitch(&switch2);
   turn3.setPosition(180,dw,heig4);
-  turn3.setSwitch(new Switch(11,12,13,1200,1800));
+  turn3.setSwitch(&switch3);
   turn4.setPosition(0,0,heig4);
-  turn4.setSwitch(new Switch(22,23,24,1200,1800));
+  turn4.setSwitch(&switch4);
 
   //float slip (L= 230mm 15° R=1050mm)
 
   int16_t xshift = 35.*scale+0.5f;
   slip1.setPosition(7.5,xshift,heig2);
-  slip1.setSwitch(new Switch(25,26,27,1200,1800),new Switch(28,29,30,1200,1800));
+  slip1.setSwitch(&switch5, &switch6);
   slip2.setPosition(-7.5,xshift,heig3);
-  slip2.setSwitch(new Switch(31,32,33,1200,1800),new Switch(34,35,36,1200,1800));
+  slip2.setSwitch(&switch7, &switch8);
   slip3.setPosition(-7.5,dw-xshift,heig2);
-  slip3.setSwitch(new Switch(37,38,39,1200,1800),new Switch(40,41,42,1200,1800));
+  slip3.setSwitch(&switch9, &switch10);
   slip4.setPosition(7.5,dw-xshift,heig3);
-  slip4.setSwitch(new Switch(43,44,45,1200,1800),new Switch(46,47,48,1200,1800));
+  slip4.setSwitch(&switch11, &switch12);
   
   tft.setTextSize(2);
   for(uint8_t i=0; i<8; ++i) {
@@ -853,8 +864,7 @@ if(0) {
     tft.setCursor(dw/2-9*tw,0.083*dh+0.5f);
     tft.setTextColor(ctext);
     tft.print(F("Route 0X"));
-    sprintf(buf, "%03X", i);        // 3 hex digits, uppercase, zero-padded
-    tft.print(buf);
+    tft.print(itoa(i&0XFFF,buf,16));
     /* if(skip) {
       continue;
     }*/
@@ -865,8 +875,8 @@ if(0) {
         xpos = xxpos[j];
         ypos = yypos[j];
         tft.setCursor(xpos-2.5*tw,ypos);
-        sprintf(buf,"%d-",j+1);
-        tft.print(buf);
+        tft.print(j+1);
+        tft.print(F("-"));
         tft.setCursor(xpos,ypos);
         xpos += xtshift;
         ypos += ytshift;
@@ -899,8 +909,8 @@ if(0) {
     xpos = xxpos[j];
     ypos = yypos[j];
     tft.setCursor(xpos-2.5*tw,ypos);
-    sprintf(buf,"%d-",j+1);
-    tft.print(buf);
+    tft.print(j+1);
+    tft.print(F("-"));
     tft.setCursor(xpos,ypos);
     xpos += xtshift;
     ypos += ytshift;
@@ -919,30 +929,23 @@ if(0) {
 
 
 void loop(void) {
+  if(checkRoute(state))
   for(uint8_t j = 0; j<8; ++j) {
       tvect[j]->setState(state[j]);
   }
   if(ts.touched()) {
-//    Serial.println(F("Touched"));
     p = ts.getPoint();
     uint16_t xx = p.y;
     uint16_t yy = dh - p.x;
-//    Serial.print(F(" x = "));Serial.print(xx);Serial.print(F(" y = "));Serial.println(yy);
     for(uint8_t j = 0; j<8; ++j) {
       if(tvect[j]->inPoint(xx,yy)) {
         tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
-//        Serial.print(F("In point of "));Serial.println(j+1);
-//        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
         if(j<4) 
           state[j] = (state[j]+1) & 1;
         else
           state[j] = (state[j]+1) & 3;
-//        Serial.print(F("State "));Serial.print(j);Serial.print(F(" = "));Serial.println(state[j]);
         xpos = xxpos[j];
         ypos = yypos[j];
-        tft.setCursor(xpos-2.5*tw,ypos);
-        sprintf(buf,"%d-",j+1);
-        tft.print(buf);
         tft.setCursor(xpos,ypos);
         xpos += xtshift;
         ypos += ytshift;
