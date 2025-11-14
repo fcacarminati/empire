@@ -6,8 +6,8 @@
 #include <math.h>
 #include <string.h>
 
-#define TFT25257
-//#define ILI9341
+//#define TFT25257
+#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -24,7 +24,7 @@ const int TS_LEFT=175,TS_RT=869,TS_TOP=940,TS_BOT=133;
 #define MAXPRESSURE 1000
 #endif
 
-const uint8_t Orientation = 1;    //PORTRAIT
+const uint8_t Orientation = 1;    //Landscape
 
 #include "Switch.h"
 
@@ -106,6 +106,9 @@ inline void rgb565_to_rgb888(uint16_t c,
 #define GREENYELLOW 0xAFE5  ///< 173, 255,  41
 #define SPINK       0xFC18  ///< 255, 130, 198
 
+uint16_t dw = 0;
+uint16_t dh = 0;
+
 #ifdef ILI9341
 // For the Adafruit shield, these are the default.
 //#define TFT_CLK 13
@@ -154,13 +157,13 @@ void mapPoint(uint16_t &xpos, uint16_t &ypos) {
     ypos = map(p.x, TS_LEFT, TS_RT, 0, tft.height());
     break;
   };
+  xpos = constrain(xpos, 0, dw-1);
+  ypos = constrain(ypos, 0, dh-1);
 }
 #endif
 
 
 float scale = 0;
-uint16_t dw = 0;
-uint16_t dh = 0;
 uint16_t xlowt=0;
 uint16_t ylowt=0;
 uint16_t xhigt=0;
@@ -982,38 +985,45 @@ void loop(void) {
     yy = dh - p.x;
 #endif
 #ifdef TFT25257
+  static bool wasTouch = false;
   p = ts.getPoint();
-  delay(50);
 // if sharing pins, you'll need to fix the directions of the touchscreen pins
-  pinMode(XM, OUTPUT);
-  pinMode(YP, OUTPUT);
-  if(p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-    Serial.println(p.z);
-    mapPoint(xx,yy);
+  pinMode(XM, OUTPUT);digitalWrite(XM, HIGH);
+  pinMode(YP, OUTPUT);digitalWrite(YP, HIGH);
+
+  bool touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
+
+  if (touching) {
+    if (!wasTouch) {
+      mapPoint(xx, yy);
 #endif
-    for(uint8_t j = 0; j<8; ++j) {
-      if(tvect[j]->inPoint(xx,yy)) {
-        tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
-        if(j<4) 
-          state[j] = (state[j]+1) & 1;
-        else
-          state[j] = (state[j]+1) & 3;
-        xpos = xxpos[j];
-        ypos = yypos[j];
-        tft.setCursor(xpos,ypos);
-        xpos += xtshift;
-        ypos += ytshift;
-        tft.fillRect(xpos,ypos,20,22,colback);
-        tft.drawRect(xpos,ypos,20,22,GREEN);
-        tvect[j]->draw(state[j]);
-        tft.print(state[j]);
-        if(!checkRoute(state)) {
-          tft.setCursor(dw/2-4*tw,0.083*dh+0.5f);
-          tft.setTextColor(RED);
-          tft.print(F("No route!"));
-          tft.setTextColor(coltext);
+      for(uint8_t j = 0; j<8; ++j) {
+        if(tvect[j]->inPoint(xx,yy)) {
+          tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
+          if(j<4) 
+            state[j] = (state[j]+1) & 1;
+          else
+            state[j] = (state[j]+1) & 3;
+          xpos = xxpos[j];
+          ypos = yypos[j];
+          tft.setCursor(xpos,ypos);
+          xpos += xtshift;
+          ypos += ytshift;
+          tft.fillRect(xpos,ypos,20,22,colback);
+          tft.drawRect(xpos,ypos,20,22,GREEN);
+          tvect[j]->draw(state[j]);
+          tft.print(state[j]);
+          if(!checkRoute(state)) {
+            tft.setCursor(dw/2-4*tw,0.083*dh+0.5f);
+            tft.setTextColor(RED);
+            tft.print(F("No route!"));
+            tft.setTextColor(coltext);
+          }
         }
       }
-    }  
+    }
+#ifdef TFT25257  
   }
+  wasTouch = touching;
+#endif
 }
