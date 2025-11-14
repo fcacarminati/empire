@@ -6,19 +6,25 @@
 #include <math.h>
 #include <string.h>
 
-//#define TFT25257
-#define ILI9341
+#define TFT25257
+//#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
 #include "SPI.h"
 #include "Adafruit_ILI9341.h"
 #include <Adafruit_FT6206.h>
-#else
+#endif
 #ifdef TFT25257
 #include "MCUFRIEND_kbv.h"
+#include "TouchScreen.h"
+const int XP = 8, YP = A3, XM = A2, YM = 9;
+const int TS_LEFT=175,TS_RT=869,TS_TOP=940,TS_BOT=133;
+#define MINPRESSURE 200
+#define MAXPRESSURE 1000
 #endif
-#endif
+
+const uint8_t Orientation = 1;    //PORTRAIT
 
 #include "Switch.h"
 
@@ -124,7 +130,33 @@ TS_Point p;
 
 #ifdef TFT25257
 MCUFRIEND_kbv tft;
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+TSPoint p;
+#define MINPRESSURE 200
+#define MAXPRESSURE 1000
+
+void mapPoint(uint16_t &xpos, uint16_t &ypos) {
+  switch (Orientation) {
+  case 0:
+    xpos = map(p.x, TS_LEFT, TS_RT, 0, tft.width());
+    ypos = map(p.y, TS_TOP, TS_BOT, 0, tft.height());
+    break;
+  case 1:
+    xpos = map(p.y, TS_TOP, TS_BOT, 0, tft.width());
+    ypos = map(p.x, TS_RT, TS_LEFT, 0, tft.height());
+    break;
+  case 2:
+    xpos = map(p.x, TS_RT, TS_LEFT, 0, tft.width());
+    ypos = map(p.y, TS_BOT, TS_TOP, 0, tft.height());
+    break;
+  case 3:
+    xpos = map(p.y, TS_BOT, TS_TOP, 0, tft.width());
+    ypos = map(p.x, TS_LEFT, TS_RT, 0, tft.height());
+    break;
+  };
+}
 #endif
+
 
 float scale = 0;
 uint16_t dw = 0;
@@ -255,7 +287,7 @@ void drawEnd() {
   pack(yhigt-ylowt,3);
   m_drfirst = false;
   tft.drawRect(xlowt,ylowt,xhigt-xlowt,yhigt-ylowt,RED);
-  tft.drawRect(xlowt-1,ylowt-1,xhigt-xlowt+2,yhigt-ylowt+2,RED);
+//  tft.drawRect(xlowt-1,ylowt-1,xhigt-xlowt+2,yhigt-ylowt+2,RED);
 }
 
   void updWin (uint16_t x0, uint16_t y0) {
@@ -407,8 +439,8 @@ public:
   }
 
   void setState(uint8_t state) {
-    m_switch1->Change(state & 1);
-    m_switch2->Change((state>>1) & 1);
+    if(m_switch1) m_switch1->Change(state & 1);
+    if(m_switch2) m_switch2->Change((state>>1) & 1);
   }
 
 private:
@@ -470,7 +502,7 @@ public:
   }
 
   void setState(uint8_t state) {
-    m_switch->Change(state & 1);
+    if(m_switch) m_switch->Change(state & 1);
   }
 
 private:
@@ -646,14 +678,19 @@ uint16_t colback;
 void setup() {
   Serial.begin(9600);
   uint16_t begarg = 0;
+#ifdef ILI9341
   ts.begin();
+#endif
 #ifdef TFT25257
-   begarg = tft.readID();
+  begarg = tft.readID();
+  pinMode(XM, OUTPUT);
+  pinMode(YP, OUTPUT);
+ 
 #endif
  
   Serial.println(begarg);
   tft.begin(begarg);
-  tft.setRotation(1);
+  tft.setRotation(Orientation);
   
   const uint8_t palette = 2;
   
@@ -703,10 +740,10 @@ void setup() {
   Serial.print(F(" +- "));Serial.println(sqrt(sumdiff12*hnorm1 - sumdiff1*hnorm1*sumdiff1*hnorm1));
   Serial.print(F("              sin "));Serial.print(sumdiff2*hnorm1,7);
   Serial.print(F(" +- "));Serial.println(sqrt(sumdiff22*hnorm1 - sumdiff2*hnorm1*sumdiff2*hnorm1));
- #endif
+#endif
 
   // read diagnostics (optional but can help debug problems)
- #ifdef ILI9341
+#ifdef ILI9341
   uint8_t x = tft.readcommand8(ILI9341_RDMODE);
   Serial.print(F("Display Power Mode: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDMADCTL);
@@ -717,7 +754,7 @@ void setup() {
   Serial.print(F("Image Format: 0x")); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print(F("Self Diagnostic: 0x")); Serial.println(x, HEX); 
-  #endif
+#endif
   Serial.print(F("TFT width:  ")); Serial.println(dw=tft.width());
   Serial.print(F("TFT height: ")); Serial.println(dh=tft.height());
 
@@ -762,26 +799,28 @@ void setup() {
 //  Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   yield();
   
+  Serial.println(F("Before slips"));
   turn1.setPosition(0,0,heig1);
-  turn1.setSwitch(&switch1);
+  //turn1.setSwitch(&switch1);
   turn2.setPosition(180,dw,heig1);
-  turn2.setSwitch(&switch2);
+  //turn2.setSwitch(&switch2);
   turn3.setPosition(180,dw,heig4);
-  turn3.setSwitch(&switch3);
+  //turn3.setSwitch(&switch3);
   turn4.setPosition(0,0,heig4);
-  turn4.setSwitch(&switch4);
+  //turn4.setSwitch(&switch4);
 
   //float slip (L= 230mm 15° R=1050mm)
 
   int16_t xshift = 35.*scale+0.5f;
   slip1.setPosition(7.5,xshift,heig2);
-  slip1.setSwitch(&switch5, &switch6);
+  //slip1.setSwitch(&switch5, &switch6);
   slip2.setPosition(-7.5,xshift,heig3);
-  slip2.setSwitch(&switch7, &switch8);
+  //slip2.setSwitch(&switch7, &switch8);
   slip3.setPosition(-7.5,dw-xshift,heig2);
-  slip3.setSwitch(&switch9, &switch10);
+  //slip3.setSwitch(&switch9, &switch10);
   slip4.setPosition(7.5,dw-xshift,heig3);
-  slip4.setSwitch(&switch11, &switch12);
+  //slip4.setSwitch(&switch11, &switch12);
+  Serial.println(F("After slips"));
   
   tft.setTextSize(2);
   for(uint8_t i=0; i<8; ++i) {
@@ -933,10 +972,25 @@ void loop(void) {
   for(uint8_t j = 0; j<8; ++j) {
       tvect[j]->setState(state[j]);
   }
+
+  uint16_t xx = 0;
+  uint16_t yy = 0;
+#ifdef ILI9341
   if(ts.touched()) {
     p = ts.getPoint();
-    uint16_t xx = p.y;
-    uint16_t yy = dh - p.x;
+    xx = p.y;
+    yy = dh - p.x;
+#endif
+#ifdef TFT25257
+  p = ts.getPoint();
+  delay(50);
+// if sharing pins, you'll need to fix the directions of the touchscreen pins
+  pinMode(XM, OUTPUT);
+  pinMode(YP, OUTPUT);
+  if(p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+    Serial.println(p.z);
+    mapPoint(xx,yy);
+#endif
     for(uint8_t j = 0; j<8; ++j) {
       if(tvect[j]->inPoint(xx,yy)) {
         tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
