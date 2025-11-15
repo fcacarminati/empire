@@ -6,8 +6,8 @@
 #include <math.h>
 #include <string.h>
 
-//#define TFT25257
-#define ILI9341
+#define TFT25257
+//#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -94,6 +94,7 @@ inline void rgb565_to_rgb888(uint16_t c,
 #define PURPLE      0x780F  ///< 123,   0, 123
 #define OLIVE       0x7BE0  ///< 123, 125,   0
 #define LIGHTGREY   0xC618  ///< 198, 195, 198
+#define MEDIUMGREY  0x94D2  ///< 150, 152, 150
 #define DARKGREY    0x7BEF  ///< 123, 125, 123
 #define BLUE        0x001F  ///<   0,   0, 255
 #define GREEN       0x07E0  ///<   0, 255,   0
@@ -289,7 +290,7 @@ void drawEnd() {
   pack(xhigt-xlowt,2);
   pack(yhigt-ylowt,3);
   m_drfirst = false;
-  tft.drawRect(xlowt,ylowt,xhigt-xlowt,yhigt-ylowt,RED);
+//  tft.drawRect(xlowt,ylowt,xhigt-xlowt,yhigt-ylowt,RED);
 //  tft.drawRect(xlowt-1,ylowt-1,xhigt-xlowt+2,yhigt-ylowt+2,RED);
 }
 
@@ -323,7 +324,7 @@ void drawEnd() {
         const float yp0 = (rad+j) * lutsin(ang) + (m_side == kright ? 1 : -1)*(rad+yshift);
         matrot(xp0,yp0,x0,y0);
         if(m_drfirst) updWin(x0,y0);
-        tft.writePixel(x0,y0,color);
+        tft.writePixel(x0,y0,end-abs(j) == 1 ? MEDIUMGREY : color);
       }
     }
   }
@@ -343,7 +344,7 @@ void drawEnd() {
         updWin(x0,y0);
         updWin(x1,y1);
       }
-      tft.writeLine(x0,y0,x1,y1,color);  
+      tft.writeLine(x0,y0,x1,y1,end-abs(j) == 1 ? MEDIUMGREY : color);  
    }
   }
 
@@ -676,6 +677,42 @@ const int8_t ytshift = -4;
 char buf[6];                        // enough for "0xFFF\0"
 uint16_t coltext;
 uint16_t colback;
+struct {
+      uint16_t x = 0;
+      uint16_t y = 0;
+      uint8_t  w = 0;
+      uint8_t  h = 0;
+} rb;
+
+void initState() {
+  state[0]=0;
+  state[1]=0;
+  state[2]=0;
+  state[3]=0;
+  state[4]=1;
+  state[5]=0;
+  state[6]=0;
+  state[7]=1;
+  tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
+  for(uint8_t j = 0; j<8; ++j) {
+    if(ostate[j] != state[j]) {
+      tvect[j]->setState(state[j]);
+      xpos = xxpos[j];
+      ypos = yypos[j];
+      tft.setCursor(xpos-2.5*tw,ypos);
+      tft.print(j+1);
+      tft.print(F("-"));
+      tft.setCursor(xpos,ypos);
+      xpos += xtshift;
+      ypos += ytshift;
+      tft.fillRect(xpos,ypos,20,22,colback);
+      tft.drawRect(xpos,ypos,20,22,GREEN);
+      tvect[j]->draw(state[j]);
+      tft.print(state[j]);
+      ostate[j] = state[j];
+    }
+  }
+}
 
 // 6 Aand 8.6
 void setup() {
@@ -708,6 +745,7 @@ void setup() {
   yield();
 
   preplut();
+
 #ifdef NEVER
   const float hnorm = 1.f/RAND_MAX;
   const uint32_t nrep = 10;
@@ -802,6 +840,9 @@ void setup() {
 //  Serial.print(F("Free RAM after: "));  Serial.println(freeHeap());
   yield();
   
+  //Serial.println(rgb888_to_rgb565_round(150,152,150));
+
+
   Serial.println(F("Before slips"));
   turn1.setPosition(0,0,heig1);
   //turn1.setSwitch(&switch1);
@@ -938,35 +979,23 @@ if(0) {
 }
   Serial.print("Numnber of valid configurations ");Serial.println(nvalid);
 }
-  state[0]=0;
-  state[1]=0;
-  state[2]=0;
-  state[3]=0;
-  state[4]=1;
-  state[5]=0;
-  state[6]=0;
-  state[7]=1;
-
-  for(uint8_t j = 0; j<8; ++j) {
-    xpos = xxpos[j];
-    ypos = yypos[j];
-    tft.setCursor(xpos-2.5*tw,ypos);
-    tft.print(j+1);
-    tft.print(F("-"));
-    tft.setCursor(xpos,ypos);
-    xpos += xtshift;
-    ypos += ytshift;
-    tft.fillRect(xpos,ypos,20,22,colback);
-    tft.drawRect(xpos,ypos,20,22,GREEN);
-    tvect[j]->draw(state[j]);
-    tft.print(state[j]);
-    ostate[j] = state[j];
-  }
+  initState();
 
     tft.fillCircle(10,10,3,RED);
     tft.fillCircle(dw-10,10,3,RED);
     tft.fillCircle(10,dh-10,3,RED);
     tft.fillCircle(dw-10,dh-10,3,RED);
+
+    rb.x = dw/2-2.6*tw;
+    rb.y = 0.85*dh;
+    rb.w = 5.2*tw;
+    rb.h = 1.2*th;
+    
+//    tft.drawRect(dw/2-2.6*tw,0.85*dh,5.2*tw,1.2*th,BLACK);
+//    tft.drawRect(rb.x,rb.y,rb.w,rb.h,BLACK);
+//    tft.setCursor(dw/2-2.5*tw,0.86*dh);
+    tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
+    tft.print("reset");
 }
 
 
@@ -978,52 +1007,62 @@ void loop(void) {
 
   uint16_t xx = 0;
   uint16_t yy = 0;
+  static bool wasTouch = false;
+  bool touching = false;
+ 
 #ifdef ILI9341
-  if(ts.touched()) {
+  touching = ts.touched();
+  if(touching && !wasTouch) {
     p = ts.getPoint();
     xx = p.y;
     yy = dh - p.x;
 #endif
 #ifdef TFT25257
-  static bool wasTouch = false;
   p = ts.getPoint();
 // if sharing pins, you'll need to fix the directions of the touchscreen pins
   pinMode(XM, OUTPUT);digitalWrite(XM, HIGH);
   pinMode(YP, OUTPUT);digitalWrite(YP, HIGH);
 
-  bool touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
+  touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
 
-  if (touching) {
-    if (!wasTouch) {
-      mapPoint(xx, yy);
+  if (touching && !wasTouch) {
+    mapPoint(xx, yy);
 #endif
-      for(uint8_t j = 0; j<8; ++j) {
-        if(tvect[j]->inPoint(xx,yy)) {
-          tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
-          if(j<4) 
-            state[j] = (state[j]+1) & 1;
-          else
-            state[j] = (state[j]+1) & 3;
-          xpos = xxpos[j];
-          ypos = yypos[j];
-          tft.setCursor(xpos,ypos);
-          xpos += xtshift;
-          ypos += ytshift;
-          tft.fillRect(xpos,ypos,20,22,colback);
-          tft.drawRect(xpos,ypos,20,22,GREEN);
-          tvect[j]->draw(state[j]);
-          tft.print(state[j]);
-          if(!checkRoute(state)) {
-            tft.setCursor(dw/2-4*tw,0.083*dh+0.5f);
-            tft.setTextColor(RED);
-            tft.print(F("No route!"));
-            tft.setTextColor(coltext);
-          }
+    if(xx>rb.x && xx<rb.x+rb.w && yy>rb.y && yy<rb.y+rb.h) {
+      tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
+      tft.setTextColor(RED);
+      tft.print(F("reset"));
+      tft.setTextColor(BLACK);
+      Serial.println(F("RESET!"));
+      initState();
+      tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
+      tft.print(F("reset"));
+    }
+    for(uint8_t j = 0; j<8; ++j) {
+      if(tvect[j]->inPoint(xx,yy)) {
+        tft.fillRect(15,0,dw-30,0.167*dh+0.5f,colback);
+        if(j<4) 
+          state[j] = (state[j]+1) & 1;
+        else
+          state[j] = (state[j]+1) & 3;
+        xpos = xxpos[j];
+        ypos = yypos[j];
+        tft.setCursor(xpos,ypos);
+        xpos += xtshift;
+        ypos += ytshift;
+        tft.fillRect(xpos,ypos,20,22,colback);
+        tft.drawRect(xpos,ypos,20,22,GREEN);
+        tvect[j]->draw(state[j]);
+        tft.print(state[j]);
+        if(!checkRoute(state)) {
+          tft.setCursor(dw/2-4*tw,0.083*dh+0.5f);
+          tft.setTextColor(RED);
+          tft.print(F("no route!"));
+          tft.setTextColor(coltext);
         }
       }
+      ostate[j] = state[j];
     }
-#ifdef TFT25257  
   }
   wasTouch = touching;
-#endif
 }
