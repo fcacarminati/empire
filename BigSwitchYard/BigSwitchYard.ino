@@ -19,7 +19,8 @@
 #include "MCUFRIEND_kbv.h"
 #include "TouchScreen.h"
 const int XP = 8, YP = A3, XM = A2, YM = 9;
-const int TS_LEFT=175,TS_RT=869,TS_TOP=940,TS_BOT=133;
+//const int TS_LEFT=175,TS_RT=869,TS_TOP=940,TS_BOT=133;
+const int TS_LEFT=127,TS_RT=909,TS_TOP=951,TS_BOT=98;
 #define MINPRESSURE 200
 #define MAXPRESSURE 1000
 #endif
@@ -136,12 +137,9 @@ TS_Point p;
 MCUFRIEND_kbv tft;
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 TSPoint p;
-#define MINPRESSURE 200
-#define MAXPRESSURE 1000
-
-void mapPoint(uint16_t &xpos, uint16_t &ypos) {
+static inline void mapP(uint16_t &xpos, uint16_t &ypos) {
   switch (Orientation) {
-  case 0:
+  case 0: //portrait
     xpos = map(p.x, TS_LEFT, TS_RT, 0, tft.width());
     ypos = map(p.y, TS_TOP, TS_BOT, 0, tft.height());
     break;
@@ -160,6 +158,32 @@ void mapPoint(uint16_t &xpos, uint16_t &ypos) {
   };
   xpos = constrain(xpos, 0, dw-1);
   ypos = constrain(ypos, 0, dh-1);
+}
+#endif
+#ifdef ILI9341
+static inline void mapP(uint16_t &xpos, uint16_t &ypos) {
+  // FT6206 returns ~0..239/0..319 in its own axes.
+  // Adjust for your display Orientation = 0..3
+  switch (Orientation) {
+    case 0: // portrait
+      xpos = p.x;
+      ypos = p.y;
+      break;
+    case 1: // landscape (your default)
+      xpos = p.y;
+      ypos = dh - 1 - p.x;
+      break;
+    case 2: // portrait flipped
+      xpos = dw - 1 - p.x;
+      ypos = dh - 1 - p.y;
+      break;
+    case 3: // landscape flipped
+      xpos = dw - 1 - p.y;
+      ypos = p.x;
+      break;
+  }
+  xpos = constrain(xpos, 0, dw - 1);
+  ypos = constrain(ypos, 0, dh - 1);
 }
 #endif
 
@@ -395,7 +419,7 @@ public:
     int8_t jorder = -2-state;
 
     if(m_drfirst) drawInit();
-    tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));     
+    setWin(upack(0),upack(1),upack(2),upack(3));     
 
     tft.startWrite();
     while(1) {
@@ -480,7 +504,7 @@ public:
     const float ang1 = m_side == kleft ? 90.f-m_ang : 270.f;
      
     if(m_drfirst) drawInit();
-    tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));
+    setWin(upack(0),upack(1),upack(2),upack(3));
 
     tft.startWrite();
     while(1) {
@@ -536,7 +560,7 @@ public:
     const int16_t xlen = 0.5f*0.01f*m_len*m_scale+0.5f; 
 
     if(m_drfirst) drawInit();
-    tft.setAddrWindow(upack(0),upack(1),upack(2),upack(3));
+    setWin(upack(0),upack(1),upack(2),upack(3));
 
     tft.startWrite();
     drawLine(-xlen,xlen,state == 0 ? m_coloff : m_colon);
@@ -714,12 +738,21 @@ void initState() {
   }
 }
 
+inline void setWin(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+#ifdef ILI9341
+  // Adafruit wants x1,y1 inclusive
+  tft.setAddrWindow(x, y, x + (w ? w - 1 : 0), y + (h ? h - 1 : 0));
+#elif defined(TFT25257)
+  tft.setAddrWindow(x, y, w, h);
+#endif
+}
+
 // 6 Aand 8.6
 void setup() {
   Serial.begin(9600);
   uint16_t begarg = 0;
 #ifdef ILI9341
-  ts.begin();
+  if (!ts.begin(40)) { Serial.println(F("FT6206 not found")); }
 #endif
 #ifdef TFT25257
   begarg = tft.readID();
@@ -843,7 +876,6 @@ void setup() {
   //Serial.println(rgb888_to_rgb565_round(150,152,150));
 
 
-  Serial.println(F("Before slips"));
   turn1.setPosition(0,0,heig1);
   //turn1.setSwitch(&switch1);
   turn2.setPosition(180,dw,heig1);
@@ -864,7 +896,6 @@ void setup() {
   //slip3.setSwitch(&switch9, &switch10);
   slip4.setPosition(7.5,dw-xshift,heig3);
   //slip4.setSwitch(&switch11, &switch12);
-  Serial.println(F("After slips"));
   
   tft.setTextSize(2);
   for(uint8_t i=0; i<8; ++i) {
@@ -986,13 +1017,15 @@ if(0) {
     tft.fillCircle(10,dh-10,3,RED);
     tft.fillCircle(dw-10,dh-10,3,RED);
 
-    rb.x = dw/2-2.6*tw;
-    rb.y = 0.85*dh;
-    rb.w = 5.2*tw;
-    rb.h = 1.2*th;
+    rb.x = dw/2-2.6f*tw+0.5f;
+    rb.y = 0.85f*dh+0.5f;
+    rb.w = 5.2f*tw+0.5f;
+    rb.h = 1.2f*th+0.5f;
+//    tft.fillCircle(rb.x,rb.y,3,GREEN);
+//    tft.fillCircle(rb.x+rb.w,rb.y+rb.h,3,GREEN);
     
 //    tft.drawRect(dw/2-2.6*tw,0.85*dh,5.2*tw,1.2*th,BLACK);
-//    tft.drawRect(rb.x,rb.y,rb.w,rb.h,BLACK);
+    tft.drawRect(rb.x,rb.y,rb.w,rb.h,BLACK);
 //    tft.setCursor(dw/2-2.5*tw,0.86*dh);
     tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
     tft.print("reset");
@@ -1008,14 +1041,11 @@ void loop(void) {
   uint16_t xx = 0;
   uint16_t yy = 0;
   static bool wasTouch = false;
-  bool touching = false;
  
 #ifdef ILI9341
-  touching = ts.touched();
-  if(touching && !wasTouch) {
+  bool touching = ts.touched();
+  if (touching && !wasTouch) {
     p = ts.getPoint();
-    xx = p.y;
-    yy = dh - p.x;
 #endif
 #ifdef TFT25257
   p = ts.getPoint();
@@ -1023,20 +1053,19 @@ void loop(void) {
   pinMode(XM, OUTPUT);digitalWrite(XM, HIGH);
   pinMode(YP, OUTPUT);digitalWrite(YP, HIGH);
 
-  touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
-
+  bool touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
   if (touching && !wasTouch) {
-    mapPoint(xx, yy);
 #endif
+    mapP(xx, yy);
     if(xx>rb.x && xx<rb.x+rb.w && yy>rb.y && yy<rb.y+rb.h) {
+      const char* reset = "reset";
       tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
       tft.setTextColor(RED);
-      tft.print(F("reset"));
+      tft.print(reset);
       tft.setTextColor(BLACK);
-      Serial.println(F("RESET!"));
       initState();
       tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
-      tft.print(F("reset"));
+      tft.print(reset);
     }
     for(uint8_t j = 0; j<8; ++j) {
       if(tvect[j]->inPoint(xx,yy)) {
