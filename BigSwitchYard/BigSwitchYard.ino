@@ -6,8 +6,8 @@
 #include <math.h>
 #include <string.h>
 
-#define TFT25257
-//#define ILI9341
+//#define TFT25257
+#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -747,6 +747,34 @@ inline void setWin(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 #endif
 }
 
+bool getPoint(uint16_t &x, uint16_t &y) {
+  static bool wasTouch = false;
+  bool retval = false;
+  x = 0;
+  y = 0;
+#ifdef ILI9341
+  bool touching = ts.touched();
+  if (touching && !wasTouch) {
+    p = ts.getPoint();
+#endif
+#ifdef TFT25257
+  p = ts.getPoint();
+// if sharing pins, you'll need to fix the directions of the touchscreen pins
+  pinMode(XM, OUTPUT);digitalWrite(XM, HIGH);
+  pinMode(YP, OUTPUT);digitalWrite(YP, HIGH);
+
+  bool touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
+  if (touching && !wasTouch) {
+#endif
+    mapP(x, y);
+    retval = true;
+  }
+  wasTouch = touching;
+  return retval;
+}
+    
+ 
+
 // 6 Aand 8.6
 void setup() {
   Serial.begin(9600);
@@ -1021,12 +1049,8 @@ if(0) {
     rb.y = 0.85f*dh+0.5f;
     rb.w = 5.2f*tw+0.5f;
     rb.h = 1.2f*th+0.5f;
-//    tft.fillCircle(rb.x,rb.y,3,GREEN);
-//    tft.fillCircle(rb.x+rb.w,rb.y+rb.h,3,GREEN);
     
-//    tft.drawRect(dw/2-2.6*tw,0.85*dh,5.2*tw,1.2*th,BLACK);
     tft.drawRect(rb.x,rb.y,rb.w,rb.h,BLACK);
-//    tft.setCursor(dw/2-2.5*tw,0.86*dh);
     tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
     tft.print("reset");
 }
@@ -1040,23 +1064,8 @@ void loop(void) {
 
   uint16_t xx = 0;
   uint16_t yy = 0;
-  static bool wasTouch = false;
- 
-#ifdef ILI9341
-  bool touching = ts.touched();
-  if (touching && !wasTouch) {
-    p = ts.getPoint();
-#endif
-#ifdef TFT25257
-  p = ts.getPoint();
-// if sharing pins, you'll need to fix the directions of the touchscreen pins
-  pinMode(XM, OUTPUT);digitalWrite(XM, HIGH);
-  pinMode(YP, OUTPUT);digitalWrite(YP, HIGH);
 
-  bool touching = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
-  if (touching && !wasTouch) {
-#endif
-    mapP(xx, yy);
+  if(getPoint(xx,yy)) {
     if(xx>rb.x && xx<rb.x+rb.w && yy>rb.y && yy<rb.y+rb.h) {
       const char* reset = "reset";
       tft.setCursor(rb.x+0.2f*tw, rb.y+0.1f*th);
@@ -1093,5 +1102,4 @@ void loop(void) {
       ostate[j] = state[j];
     }
   }
-  wasTouch = touching;
 }
