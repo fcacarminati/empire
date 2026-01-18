@@ -29,6 +29,7 @@ void loop()
   Serial.print("Pot reading ");
   Serial.println(ipot);
   int speed = map(ipot,0,1023,-400,400);
+  if (abs(speed) < 20) speed = 0;
   Serial.print("Speed ");
   Serial.println(speed);
   md.setM1Speed(speed);
