@@ -6,8 +6,8 @@
 #include <math.h>
 #include <string.h>
 
-//#define TFT25257
-#define ILI9341
+#define TFT25257
+//#define ILI9341
 
 #include "Adafruit_GFX.h"
 #ifdef ILI9341
@@ -747,6 +747,8 @@ inline void setWin(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 #endif
 }
 
+
+#define DEBUG
 bool getPoint(uint16_t &x, uint16_t &y) {
   static bool wasTouch = false;
   bool retval = false;
@@ -767,6 +769,9 @@ bool getPoint(uint16_t &x, uint16_t &y) {
   if (touching && !wasTouch) {
 #endif
     mapP(x, y);
+#ifdef DEBUG
+    Serial.print(F("xraw "));Serial.print(p.x);Serial.print(F(" yraw "));Serial.println(p.y);
+#endif
     retval = true;
   }
   wasTouch = touching;
