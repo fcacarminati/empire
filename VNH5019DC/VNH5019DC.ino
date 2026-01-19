@@ -26,15 +26,23 @@ void setup()
 void loop()
 {
   int ipot = analogRead(A2);
-  Serial.print("Pot reading ");
-  Serial.println(ipot);
   int speed = map(ipot,0,1023,-400,400);
   if (abs(speed) < 20) speed = 0;
-  Serial.print("Speed ");
-  Serial.println(speed);
+
   md.setM1Speed(speed);
   stopIfFault();
 
+  // print current about 10x/sec
+  static unsigned long t0 = 0;
+  if (millis() - t0 > 100) {
+    t0 = millis();
+    Serial.print("pot=");
+    Serial.print(ipot);
+    Serial.print(" speed=");
+    Serial.print(speed);
+    Serial.print(" mA=");
+    Serial.println(md.getM1CurrentMilliamps());
+  }
   return;
 
   Serial.println("Loop 1");
