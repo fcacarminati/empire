@@ -151,7 +151,7 @@ void writeRoute(const char* mess){
   uint16_t w, h;
   display.getTextBounds(mess, 0, 0, &x, &y, &w, &h); // compute size
   int16_t xpos = (display.width() - w) / 2;
-  int16_t ypos = 3; // top line
+  int16_t ypos = 2; // top line
   display.setCursor(xpos, ypos);
   display.print(mess);
 }
@@ -182,6 +182,10 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
+
+#ifdef DEBUG
+    Serial.println("Starting");
+#endif
 
   dw = display.width();
   dh = display.height();
