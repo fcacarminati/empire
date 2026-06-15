@@ -273,9 +273,9 @@ void setup() {
 #ifdef DEBUG
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
-  softSerial.begin(9600);
 #endif
 
+  softSerial.begin(9600);
   if (!myDFPlayer.begin(softSerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
     Serial.println(F("Unable to begin:"));
     Serial.println(F("1.Please recheck the connection!"));
@@ -284,9 +284,9 @@ void setup() {
       delay(0); // Code to compatible with ESP8266 watch dog.
     }
   }
-  #ifdef DEBUG
+#ifdef DEBUG
   Serial.println(F("DFPlayer Mini online."));
-  #endif
+#endif
   
   myDFPlayer.volume(15);  //Set volume value. From 0 to 30
   myDFPlayer.play(2);  //Play the first mp3

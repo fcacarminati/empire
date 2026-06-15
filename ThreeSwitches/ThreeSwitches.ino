@@ -2,21 +2,27 @@
    This is the code for the Bismark Tunnel. 
    There are three switches two sensors and the illumination of the tunnel
    Here are the assignments:
-   D2  => Digital control servo 1
-   D3  => DCC relay servo 1
-   D4  => Button servo 1
-   D5  => Digital control servo 2
-   D6  => Digital relay servo 2
-   D7  => Button servo 2
-   D8  => Digital control servo 3
-   D9  => Digital relay servo 3
+   D2   => Digital control servo 1
+   D3   => DCC relay servo 1
+   D4   => Button servo 1
+   D5   => Digital control servo 2
+   D6   => Digital relay servo 2
+   D7   => Button servo 2
+   D8   => Digital control servo 3
+   D9   => Digital relay servo 3
    D10  => Button servo 3 
+   D11  => RX channel for DFPlayer
+   D12  => TX channel for DFPlayer
+   A4   => SDA for display
+   A5   => SCL for display
 */
 #define DEBUG
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
 #include "Switch.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -172,6 +178,9 @@ int right3 = -80;//-100;
 int curve3 = -95;//-80;
 Switch Switch3(8,9,10,half3+right3,half3-curve3);
 
+SoftwareSerial softSerial(/*RX=*/ 11, /*TX=*/ 12);
+DFRobotDFPlayerMini myDFPlayer;
+
 // The setup function runs once when you press reset or power the board
 void setup() {
   
@@ -202,6 +211,27 @@ void setup() {
   writeRoute("no route");
   display.display();
 
+  softSerial.begin(9600);
+  if (!myDFPlayer.begin(softSerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
+    Serial.println(F("Unable to begin:"));
+    Serial.println(F("1.Please recheck the connection!"));
+    Serial.println(F("2.Please insert the SD card!"));
+//
+    /*
+    while(true){
+      delay(0); // Code to compatible with ESP8266 watch dog.
+    }
+    */
+  }
+
+#ifdef DEBUG
+  Serial.println(F("DFPlayer Mini online."));
+#endif
+  
+  myDFPlayer.volume(15);  //Set volume value. From 0 to 30
+  myDFPlayer.play(2);  //Play the first mp3
+
+
   Switch1.Init();
   Switch2.Init();
   Switch3.Init(); 
@@ -229,6 +259,7 @@ void loop() {
     Serial.print(" s3 ");
     Serial.println(s3);
 #endif
+    myDFPlayer.play(1);
     display.clearDisplay();
     uint16_t y0 = 0.4271*dh;
     display.drawLine(0,y0,dw,y0,SSD1306_WHITE);
@@ -239,6 +270,8 @@ void loop() {
     writeRoute(routeName[state]);
     display.display();
     oldstate = state;
+  } else {
+    myDFPlayer.stop();
   }
   Switch1.Change(s1);
   Switch2.Change(s2);
